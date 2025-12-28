@@ -1,0 +1,88 @@
+// Prisma Schema for Qalb & Quran
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  email              String   @unique
+  username           String
+  passwordHash       String
+  avatarUrl          String?
+  languagePreference String   @default("en")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  hifzProgress   HifzProgress[]
+  goals          Goal[]
+  recordings     Recording[]
+  journalEntries JournalEntry[]
+}
+
+model HifzProgress {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  surahId        Int
+  surahName      String
+  ayahStart      Int
+  ayahEnd        Int
+  status         String    @default("memorizing") // memorizing, reviewing, mastered
+  memorizedDate  DateTime?
+  reviewCount    Int       @default(0)
+  nextReviewDate DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([userId])
+}
+
+model Goal {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String   // daily, weekly, monthly
+  targetValue     Int
+  currentProgress Int      @default(0)
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  isCompleted     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Recording {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  surahId   Int
+  surahName String
+  ayahRange String
+  audioUrl  String
+  duration  Int      // seconds
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model JournalEntry {
+  id             String   @id @default(uuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ayahReference  String?
+  reflectionText String
+  moodTags       String[] @default([])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId])
+}
