@@ -72,9 +72,24 @@ export const fetchPrompts = createAsyncThunk(
     }
 );
 
+export const fetchMoodStats = createAsyncThunk(
+    'journal/fetchMoodStats',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await journalAPI.getMoodStats();
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message || 'Failed to fetch mood stats'
+            );
+        }
+    }
+);
+
 const initialState = {
     entries: [],
     prompts: [],
+    moodStats: {},
     isLoading: false,
     error: null,
 };
@@ -128,6 +143,10 @@ const journalSlice = createSlice({
             // Fetch Prompts
             .addCase(fetchPrompts.fulfilled, (state, action) => {
                 state.prompts = action.payload;
+            })
+            // Fetch Mood Stats
+            .addCase(fetchMoodStats.fulfilled, (state, action) => {
+                state.moodStats = action.payload;
             });
     },
 });

@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import * as SecureStore from 'expo-secure-store';
 import { authAPI } from '../../services/api';
+import storage from '../../services/storage';
 
 // Async thunks
 export const register = createAsyncThunk(
@@ -11,7 +11,7 @@ export const register = createAsyncThunk(
             const { token, user } = response.data.data;
 
             // Store token securely
-            await SecureStore.setItemAsync('authToken', token);
+            await storage.setItem('authToken', token);
 
             return { token, user };
         } catch (error) {
@@ -30,7 +30,7 @@ export const login = createAsyncThunk(
             const { token, user } = response.data.data;
 
             // Store token securely
-            await SecureStore.setItemAsync('authToken', token);
+            await storage.setItem('authToken', token);
 
             return { token, user };
         } catch (error) {
@@ -45,7 +45,7 @@ export const loadUser = createAsyncThunk(
     'auth/loadUser',
     async (_, { rejectWithValue }) => {
         try {
-            const token = await SecureStore.getItemAsync('authToken');
+            const token = await storage.getItem('authToken');
             if (!token) {
                 return rejectWithValue('No token found');
             }
@@ -53,7 +53,7 @@ export const loadUser = createAsyncThunk(
             const response = await authAPI.getProfile();
             return { token, user: response.data.data };
         } catch (error) {
-            await SecureStore.deleteItemAsync('authToken');
+            await storage.removeItem('authToken');
             return rejectWithValue(
                 error.response?.data?.message || 'Session expired'
             );
@@ -64,7 +64,7 @@ export const loadUser = createAsyncThunk(
 export const logout = createAsyncThunk(
     'auth/logout',
     async () => {
-        await SecureStore.deleteItemAsync('authToken');
+        await storage.removeItem('authToken');
         return null;
     }
 );

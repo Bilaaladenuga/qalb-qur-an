@@ -10,14 +10,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { fetchProgress, fetchGoals } from '../../store/slices/hifzSlice';
+import { fetchProgress, fetchGoals, fetchReviewQueue } from '../../store/slices/hifzSlice';
 import { Card } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 
 const HomeScreen = ({ navigation }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
-    const { stats, goals, isLoading } = useSelector((state) => state.hifz);
+    const { stats, goals, reviewQueue, isLoading } = useSelector((state) => state.hifz);
 
     useEffect(() => {
         loadData();
@@ -26,6 +26,7 @@ const HomeScreen = ({ navigation }) => {
     const loadData = () => {
         dispatch(fetchProgress());
         dispatch(fetchGoals());
+        dispatch(fetchReviewQueue());
     };
 
     // Get greeting based on time
@@ -70,8 +71,14 @@ const HomeScreen = ({ navigation }) => {
                         <Text style={styles.greeting}>{getGreeting()} 🌙</Text>
                         <Text style={styles.username}>{user?.username || 'Sister'}</Text>
                     </View>
-                    <View style={styles.avatarContainer}>
-                        <Ionicons name="person" size={24} color={colors.primary} />
+                    <View style={styles.headerRight}>
+                        <View style={styles.streakBadge}>
+                            <Ionicons name="flame" size={18} color="#F59E0B" />
+                            <Text style={styles.streakValue}>{user?.currentStreak || 0}</Text>
+                        </View>
+                        <View style={styles.avatarContainer}>
+                            <Ionicons name="person" size={24} color={colors.primary} />
+                        </View>
                     </View>
                 </View>
 
@@ -168,6 +175,26 @@ const HomeScreen = ({ navigation }) => {
                     )}
                 </View>
 
+                {/* Review Queue */}
+                {reviewQueue.length > 0 && (
+                    <View style={styles.goalsContainer}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Ready for Review 🔁</Text>
+                        </View>
+                        {reviewQueue.slice(0, 3).map((item) => (
+                            <Card key={item.id} style={styles.reviewCard}>
+                                <View style={styles.goalHeader}>
+                                    <Text style={styles.surahTitle}>{item.surahName}</Text>
+                                    <View style={styles.reviewBadge}>
+                                        <Text style={styles.reviewBadgeText}>Needs Review</Text>
+                                    </View>
+                                </View>
+                                <Text style={styles.goalDescription}>Ayah {item.ayahStart} - {item.ayahEnd}</Text>
+                            </Card>
+                        ))}
+                    </View>
+                )}
+
                 {/* Quick Actions */}
                 <View style={styles.actionsContainer}>
                     <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -246,6 +273,25 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    headerRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    streakBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F59E0B20',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: spacing.xs,
+        borderRadius: borderRadius.full,
+        marginRight: spacing.sm,
+    },
+    streakValue: {
+        fontSize: typography.fontSize.md,
+        fontWeight: 'bold',
+        color: '#F59E0B',
+        marginLeft: 4,
     },
     quoteCard: {
         marginBottom: spacing.xl,
@@ -395,6 +441,27 @@ const styles = StyleSheet.create({
     actionLabel: {
         color: colors.textSecondary,
         fontSize: typography.fontSize.xs,
+    },
+    reviewCard: {
+        marginBottom: spacing.sm,
+        borderLeftWidth: 4,
+        borderLeftColor: colors.secondary,
+    },
+    surahTitle: {
+        fontSize: typography.fontSize.md,
+        fontWeight: 'bold',
+        color: colors.text,
+    },
+    reviewBadge: {
+        backgroundColor: colors.secondary + '20',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 2,
+        borderRadius: borderRadius.sm,
+    },
+    reviewBadgeText: {
+        fontSize: 10,
+        color: colors.secondary,
+        fontWeight: 'bold',
     },
 });
 

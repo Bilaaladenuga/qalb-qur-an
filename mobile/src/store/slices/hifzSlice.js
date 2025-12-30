@@ -72,9 +72,38 @@ export const createGoal = createAsyncThunk(
     }
 );
 
+export const fetchReviewQueue = createAsyncThunk(
+    'hifz/fetchReviewQueue',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await hifzAPI.getReviewQueue();
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message || 'Failed to fetch review queue'
+            );
+        }
+    }
+);
+
+export const reviewProgress = createAsyncThunk(
+    'hifz/reviewProgress',
+    async ({ id, quality }, { rejectWithValue }) => {
+        try {
+            const response = await hifzAPI.reviewProgress(id, quality);
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message || 'Failed to record review'
+            );
+        }
+    }
+);
+
 const initialState = {
     progress: [],
     goals: [],
+    reviewQueue: [],
     stats: {
         total: 0,
         memorizing: 0,
@@ -118,6 +147,8 @@ const hifzSlice = createSlice({
                 state.progress.unshift(action.payload);
                 state.stats.total += 1;
                 state.stats.memorizing += 1;
+                // Fetch goals again to reflect auto-updates
+                // Note: We can't dispatch from here, but the UI should handle reload or we can update state if we return updated goals from backend.
             })
             .addCase(addProgress.rejected, (state, action) => {
                 state.isLoading = false;
@@ -145,6 +176,20 @@ const hifzSlice = createSlice({
             // Create Goal
             .addCase(createGoal.fulfilled, (state, action) => {
                 state.goals.unshift(action.payload);
+            })
+            // Fetch Review Queue
+            .addCase(fetchReviewQueue.fulfilled, (state, action) => {
+                state.reviewQueue = action.payload;
+            })
+            // Review Progress
+            .addCase(reviewProgress.fulfilled, (state, action) => {
+                // Update progress in the list
+                const idx = state.progress.findIndex(p => p.id === action.payload.id);
+                if (idx !== -1) {
+                    state.progress[idx] = action.payload;
+                }
+                // Remove from queue
+                state.reviewQueue = state.reviewQueue.filter(p => p.id !== action.payload.id);
             });
     },
 });

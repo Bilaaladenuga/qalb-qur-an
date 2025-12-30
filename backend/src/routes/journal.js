@@ -5,7 +5,8 @@ const {
     createEntry,
     updateEntry,
     deleteEntry,
-    getPrompts
+    getPrompts,
+    getMoodStats
 } = require('../controllers/journalController');
 const { authenticate } = require('../middleware/auth');
 
@@ -18,7 +19,8 @@ router.post('/', createEntry);
 router.put('/:id', updateEntry);
 router.delete('/:id', deleteEntry);
 
-// Prompts route
+// Analytics & Prompts
 router.get('/prompts', getPrompts);
+router.get('/mood-stats', getMoodStats);
 
 module.exports = router;

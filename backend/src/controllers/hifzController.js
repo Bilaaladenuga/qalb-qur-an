@@ -59,6 +59,36 @@ const addProgress = async (req, res) => {
             }
         });
 
+        // Smart Goal Auto-update
+        // Find active goals that might be affected by this progress
+        const ayahCount = Math.abs(ayahEnd - ayahStart) + 1;
+        const today = new Date();
+
+        const activeGoals = await prisma.goal.findMany({
+            where: {
+                userId: req.user.id,
+                isCompleted: false,
+                startDate: { lte: today },
+                endDate: { gte: today }
+            }
+        });
+
+        for (const goal of activeGoals) {
+            const newProgress = goal.currentProgress + ayahCount;
+            const isCompleted = newProgress >= goal.targetValue;
+
+            await prisma.goal.update({
+                where: { id: goal.id },
+                data: {
+                    currentProgress: newProgress,
+                    isCompleted
+                }
+            });
+        }
+
+        // Update User Streak
+        await updateStreak(req.user.id);
+
         res.status(201).json({
             success: true,
             message: 'Progress added successfully! May Allah bless your memorization 🤲',
@@ -221,11 +251,163 @@ const updateGoal = async (req, res) => {
     }
 };
 
+/**
+ * Helper to update user streak
+ */
+const updateStreak = async (userId) => {
+    try {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const lastActivity = user.lastActivityDate ? new Date(user.lastActivityDate) : null;
+        if (lastActivity) lastActivity.setHours(0, 0, 0, 0);
+
+        let newStreak = user.currentStreak;
+
+        if (!lastActivity) {
+            newStreak = 1;
+        } else {
+            const diffTime = today.getTime() - lastActivity.getTime();
+            const diffDays = diffTime / (1000 * 3600 * 24);
+
+            if (diffDays === 1) {
+                // Consecutive day
+                newStreak += 1;
+            } else if (diffDays > 1) {
+                // Streak broken
+                newStreak = 1;
+            }
+            // If diffDays === 0, already recorded today, do nothing to streak
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                currentStreak: newStreak,
+                longestStreak: Math.max(newStreak, user.longestStreak),
+                lastActivityDate: new Date()
+            }
+        });
+    } catch (error) {
+        console.error('Streak update error:', error);
+    }
+};
+
+/**
+ * Mark a hifz entry as reviewed and calculate next review date
+ * using Spaced Repetition Algorithm (SRA)
+ */
+const markAsReviewed = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { quality } = req.body; // 1: Hard, 2: Good, 3: Perfect
+
+        const existing = await prisma.hifzProgress.findFirst({
+            where: { id, userId: req.user.id }
+        });
+
+        if (!existing) {
+            return res.status(404).json({
+                success: false,
+                message: 'Progress not found.'
+            });
+        }
+
+        let newReviewCount = existing.reviewCount + 1;
+        let daysToAdd = 1;
+
+        // Simplified SRA logic
+        if (quality === 3) { // Perfect
+            daysToAdd = Math.pow(2, newReviewCount); // 1, 2, 4, 8, 16...
+        } else if (quality === 2) { // Good
+            daysToAdd = Math.pow(1.5, newReviewCount); // 1, 1.5, 2.25...
+        } else { // Hard (quality 1)
+            daysToAdd = 1; // Stay on 1 day
+        }
+
+        // Cap review interval at 90 days
+        daysToAdd = Math.min(Math.round(daysToAdd), 90);
+
+        const nextReviewDate = new Date();
+        nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
+
+        // Update status if reviewed many times
+        let newStatus = existing.status;
+        if (newReviewCount > 10 && quality >= 2) {
+            newStatus = 'mastered';
+        } else if (existing.status === 'memorizing') {
+            newStatus = 'reviewing';
+        }
+
+        const updatedProgress = await prisma.hifzProgress.update({
+            where: { id },
+            data: {
+                reviewCount: newReviewCount,
+                nextReviewDate,
+                status: newStatus,
+                lastReviewed: new Date()
+            }
+        });
+
+        // Update User Streak
+        await updateStreak(req.user.id);
+
+        res.json({
+            success: true,
+            message: `Review recorded! Next review in ${daysToAdd} days.`,
+            data: updatedProgress
+        });
+    } catch (error) {
+        console.error('Mark as reviewed error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error recording review.'
+        });
+    }
+};
+
+/**
+ * Get items due for review today
+ */
+const getReviewQueue = async (req, res) => {
+    try {
+        const today = new Date();
+
+        const queue = await prisma.hifzProgress.findMany({
+            where: {
+                userId: req.user.id,
+                OR: [
+                    { nextReviewDate: { lte: today } },
+                    { nextReviewDate: null } // Items never reviewed
+                ],
+                status: { not: 'mastered' }
+            },
+            orderBy: { nextReviewDate: 'asc' }
+        });
+
+        res.json({
+            success: true,
+            data: queue
+        });
+    } catch (error) {
+        console.error('Get review queue error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching review queue.'
+        });
+    }
+};
+
 module.exports = {
     getProgress,
     addProgress,
     updateProgress,
     getGoals,
     createGoal,
-    updateGoal
+    updateGoal,
+    markAsReviewed,
+    getReviewQueue
 };

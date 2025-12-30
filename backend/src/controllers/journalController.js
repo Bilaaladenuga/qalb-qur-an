@@ -182,10 +182,41 @@ const getPrompts = async (req, res) => {
     });
 };
 
+/**
+ * Get mood statistics based on journal entries
+ */
+const getMoodStats = async (req, res) => {
+    try {
+        const entries = await prisma.journalEntry.findMany({
+            where: { userId: req.user.id },
+            select: { moodTags: true }
+        });
+
+        const stats = {};
+        entries.forEach(entry => {
+            entry.moodTags.forEach(mood => {
+                stats[mood] = (stats[mood] || 0) + 1;
+            });
+        });
+
+        res.json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        console.error('Get mood stats error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching mood stats.'
+        });
+    }
+};
+
 module.exports = {
     getEntries,
     createEntry,
     updateEntry,
     deleteEntry,
-    getPrompts
+    getPrompts,
+    getMoodStats
 };

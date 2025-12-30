@@ -31,6 +31,9 @@ const authenticate = async (req, res, next) => {
                 username: true,
                 avatarUrl: true,
                 languagePreference: true,
+                currentStreak: true,
+                longestStreak: true,
+                lastActivityDate: true,
                 createdAt: true
             }
         });

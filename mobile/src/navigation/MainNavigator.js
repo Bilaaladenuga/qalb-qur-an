@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import HomeScreen from '../screens/home/HomeScreen';
 import HifzScreen from '../screens/hifz/HifzScreen';
 import JournalScreen from '../screens/journal/JournalScreen';
+import ProfileScreen from '../screens/profile/ProfileScreen';
 import { colors, spacing } from '../theme';
 
 const Tab = createBottomTabNavigator();
@@ -65,7 +66,7 @@ const MainNavigator = () => {
             />
             <Tab.Screen
                 name="Profile"
-                component={ProfilePlaceholder}
+                component={ProfileScreen}
                 options={{
                     tabBarIcon: ({ focused, size }) => (
                         <TabIcon focused={focused} iconName="person" size={size} />
@@ -76,29 +77,7 @@ const MainNavigator = () => {
     );
 };
 
-// Placeholder for profile screen
-const ProfilePlaceholder = () => {
-    const { useDispatch } = require('react-redux');
-    const { logout } = require('../store/slices/authSlice');
-    const { Button } = require('../components');
-    const { SafeAreaView } = require('react-native-safe-area-context');
-    const { Text } = require('react-native');
-
-    const dispatch = useDispatch();
-
-    return (
-        <SafeAreaView style={styles.placeholder}>
-            <Text style={styles.placeholderTitle}>Profile</Text>
-            <Text style={styles.placeholderText}>Coming soon...</Text>
-            <Button
-                title="Logout"
-                onPress={() => dispatch(logout())}
-                variant="outline"
-                style={styles.logoutButton}
-            />
-        </SafeAreaView>
-    );
-};
+// styles removed from this chunk as they are likely unchanged at the bottom
 
 const styles = StyleSheet.create({
     tabBar: {

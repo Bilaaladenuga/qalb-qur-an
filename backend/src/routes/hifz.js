@@ -6,7 +6,9 @@ const {
     updateProgress,
     getGoals,
     createGoal,
-    updateGoal
+    updateGoal,
+    markAsReviewed,
+    getReviewQueue
 } = require('../controllers/hifzController');
 const { authenticate } = require('../middleware/auth');
 
@@ -17,6 +19,8 @@ router.use(authenticate);
 router.get('/progress', getProgress);
 router.post('/progress', addProgress);
 router.put('/progress/:id', updateProgress);
+router.post('/progress/:id/review', markAsReviewed);
+router.get('/review-queue', getReviewQueue);
 
 // Goal routes
 router.get('/goals', getGoals);

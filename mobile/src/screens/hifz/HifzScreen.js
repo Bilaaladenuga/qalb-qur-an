@@ -19,21 +19,10 @@ import {
     fetchGoals,
     createGoal
 } from '../../store/slices/hifzSlice';
-import { Card, Button, Input } from '../../components';
+import { Card, Button, Input, QuranMap } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 
-// Surah data
-const SURAHS = [
-    { id: 1, name: 'Al-Fatihah', verses: 7 },
-    { id: 2, name: 'Al-Baqarah', verses: 286 },
-    { id: 3, name: 'Aal-Imran', verses: 200 },
-    { id: 114, name: 'An-Nas', verses: 6 },
-    { id: 113, name: 'Al-Falaq', verses: 5 },
-    { id: 112, name: 'Al-Ikhlas', verses: 4 },
-    { id: 111, name: 'Al-Masad', verses: 5 },
-    { id: 110, name: 'An-Nasr', verses: 3 },
-    // Add more surahs as needed
-];
+import { SURAHS } from '../../utils/surahs';
 
 const HifzScreen = () => {
     const dispatch = useDispatch();
@@ -247,10 +236,23 @@ const HifzScreen = () => {
                         Goals
                     </Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    style={[styles.tab, activeTab === 'map' && styles.activeTab]}
+                    onPress={() => setActiveTab('map')}
+                >
+                    <Text
+                        style={[
+                            styles.tabText,
+                            activeTab === 'map' && styles.activeTabText
+                        ]}
+                    >
+                        Map
+                    </Text>
+                </TouchableOpacity>
             </View>
 
             {/* Content */}
-            {activeTab === 'progress' ? (
+            {activeTab === 'progress' && (
                 <FlatList
                     data={progress}
                     renderItem={renderProgressItem}
@@ -272,7 +274,8 @@ const HifzScreen = () => {
                         </View>
                     }
                 />
-            ) : (
+            )}
+            {activeTab === 'goals' && (
                 <FlatList
                     data={goals}
                     renderItem={renderGoalItem}
@@ -298,6 +301,11 @@ const HifzScreen = () => {
                         </View>
                     }
                 />
+            )}
+            {activeTab === 'map' && (
+                <View style={styles.mapContainer}>
+                    <QuranMap progress={progress} />
+                </View>
             )}
 
             {/* Add Progress Modal */}
@@ -611,6 +619,20 @@ const styles = StyleSheet.create({
     },
     newGoalButton: {
         marginBottom: spacing.md,
+    },
+    mapContainer: {
+        flex: 1,
+        backgroundColor: colors.surface,
+        borderRadius: borderRadius.lg,
+        padding: spacing.sm,
+        margin: spacing.md,
+        // Elevation for Android
+        elevation: 2,
+        // Shadow for iOS
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
     emptyState: {
         alignItems: 'center',

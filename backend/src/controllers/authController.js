@@ -46,6 +46,9 @@ const register = async (req, res) => {
                 username: true,
                 avatarUrl: true,
                 languagePreference: true,
+                currentStreak: true,
+                longestStreak: true,
+                lastActivityDate: true,
                 createdAt: true
             }
         });
@@ -128,6 +131,9 @@ const login = async (req, res) => {
                     username: user.username,
                     avatarUrl: user.avatarUrl,
                     languagePreference: user.languagePreference,
+                    currentStreak: user.currentStreak,
+                    longestStreak: user.longestStreak,
+                    lastActivityDate: user.lastActivityDate,
                     createdAt: user.createdAt
                 },
                 token
@@ -180,6 +186,9 @@ const updateProfile = async (req, res) => {
                 username: true,
                 avatarUrl: true,
                 languagePreference: true,
+                currentStreak: true,
+                longestStreak: true,
+                lastActivityDate: true,
                 createdAt: true,
                 updatedAt: true
             }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+import storage from './storage';
 
 // Base URL for API - change this in production
 const BASE_URL = 'http://localhost:3000/api';
@@ -17,7 +17,7 @@ const api = axios.create({
 api.interceptors.request.use(
     async (config) => {
         try {
-            const token = await SecureStore.getItemAsync('authToken');
+            const token = await storage.getItem('authToken');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -59,6 +59,8 @@ export const hifzAPI = {
     getGoals: () => api.get('/hifz/goals'),
     createGoal: (data) => api.post('/hifz/goals', data),
     updateGoal: (id, data) => api.put(`/hifz/goals/${id}`, data),
+    reviewProgress: (id, quality) => api.post(`/hifz/progress/${id}/review`, { quality }),
+    getReviewQueue: () => api.get('/hifz/review-queue'),
 };
 
 // Journal API
@@ -68,6 +70,7 @@ export const journalAPI = {
     updateEntry: (id, data) => api.put(`/journal/${id}`, data),
     deleteEntry: (id) => api.delete(`/journal/${id}`),
     getPrompts: () => api.get('/journal/prompts'),
+    getMoodStats: () => api.get('/journal/mood-stats'),
 };
 
 // Recordings API
