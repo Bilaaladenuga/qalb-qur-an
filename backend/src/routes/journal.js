@@ -6,7 +6,9 @@ const {
     updateEntry,
     deleteEntry,
     getPrompts,
-    getMoodStats
+    getMoodStats,
+    getDailyAyah,
+    exportJournalToPDF
 } = require('../controllers/journalController');
 const { authenticate } = require('../middleware/auth');
 
@@ -19,8 +21,10 @@ router.post('/', createEntry);
 router.put('/:id', updateEntry);
 router.delete('/:id', deleteEntry);
 
-// Analytics & Prompts
+// Analytics & Export
+router.get('/export', exportJournalToPDF);
 router.get('/prompts', getPrompts);
 router.get('/mood-stats', getMoodStats);
+router.get('/daily-ayah', getDailyAyah);
 
 module.exports = router;

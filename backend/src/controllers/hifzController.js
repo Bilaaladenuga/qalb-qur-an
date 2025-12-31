@@ -1,4 +1,5 @@
 const prisma = require('../lib/prisma');
+const { checkAndAwardBadges } = require('./gamificationService');
 
 /**
  * Get all hifz progress for current user
@@ -291,6 +292,9 @@ const updateStreak = async (userId) => {
                 lastActivityDate: new Date()
             }
         });
+
+        // Trigger gamification check
+        checkAndAwardBadges(userId, 'streak');
     } catch (error) {
         console.error('Streak update error:', error);
     }

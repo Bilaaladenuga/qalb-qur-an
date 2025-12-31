@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import {
     View,
     Text,
@@ -13,12 +13,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { logout } from '../../store/slices/authSlice';
-import { colors, spacing, typography } from '../../theme';
+import { fetchMyBadges } from '../../store/slices/badgeSlice';
+import { colors, spacing, typography, borderRadius } from '../../theme';
 import { Button } from '../../components';
 
 const ProfileScreen = () => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
+    const { myBadges, isLoading } = useSelector((state) => state.badges);
+
+    useEffect(() => {
+        dispatch(fetchMyBadges());
+    }, []);
 
     const handleLogout = () => {
         Alert.alert(
@@ -81,6 +87,36 @@ const ProfileScreen = () => {
                         </View>
                     </View>
                 </LinearGradient>
+
+                {/* Achievements Section */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Spiritual Achievements 🏆</Text>
+                    {myBadges.length === 0 && !isLoading ? (
+                        <View style={styles.emptyBadges}>
+                            <Text style={styles.emptyBadgesText}>
+                                Start your journey to earn beautiful badges! 🌸
+                            </Text>
+                        </View>
+                    ) : (
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            style={styles.badgesScroll}
+                        >
+                            {myBadges.map((badge) => (
+                                <View key={badge.id} style={styles.badgeCard}>
+                                    <View style={styles.badgeIconBg}>
+                                        <Ionicons name={badge.icon} size={28} color={colors.primary} />
+                                    </View>
+                                    <Text style={styles.badgeName}>{badge.name}</Text>
+                                    <Text style={styles.badgeDate}>
+                                        {new Date(badge.earnedAt).toLocaleDateString()}
+                                    </Text>
+                                </View>
+                            ))}
+                        </ScrollView>
+                    )}
+                </View>
 
                 {/* Account Section */}
                 <View style={styles.section}>
@@ -248,6 +284,47 @@ const styles = StyleSheet.create({
         color: colors.textMuted,
         marginTop: spacing.md,
         marginBottom: spacing.xl,
+    },
+    badgesScroll: {
+        marginTop: spacing.sm,
+    },
+    badgeCard: {
+        alignItems: 'center',
+        marginRight: spacing.lg,
+        width: 100,
+    },
+    badgeIconBg: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        backgroundColor: colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: spacing.xs,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    badgeName: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: colors.text,
+        textAlign: 'center',
+    },
+    badgeDate: {
+        fontSize: 10,
+        color: colors.textMuted,
+        marginTop: 2,
+    },
+    emptyBadges: {
+        backgroundColor: colors.surface + '50',
+        padding: spacing.lg,
+        borderRadius: 16,
+        alignItems: 'center',
+    },
+    emptyBadgesText: {
+        fontSize: typography.fontSize.sm,
+        color: colors.textSecondary,
+        textAlign: 'center',
     },
 });
 

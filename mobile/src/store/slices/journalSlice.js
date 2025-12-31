@@ -86,10 +86,25 @@ export const fetchMoodStats = createAsyncThunk(
     }
 );
 
+export const fetchDailyAyah = createAsyncThunk(
+    'journal/fetchDailyAyah',
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await journalAPI.getDailyAyah();
+            return response.data.data;
+        } catch (error) {
+            return rejectWithValue(
+                error.response?.data?.message || 'Failed to fetch daily ayah'
+            );
+        }
+    }
+);
+
 const initialState = {
     entries: [],
     prompts: [],
     moodStats: {},
+    dailyAyah: null,
     isLoading: false,
     error: null,
 };
@@ -147,6 +162,10 @@ const journalSlice = createSlice({
             // Fetch Mood Stats
             .addCase(fetchMoodStats.fulfilled, (state, action) => {
                 state.moodStats = action.payload;
+            })
+            // Fetch Daily Ayah
+            .addCase(fetchDailyAyah.fulfilled, (state, action) => {
+                state.dailyAyah = action.payload;
             });
     },
 });

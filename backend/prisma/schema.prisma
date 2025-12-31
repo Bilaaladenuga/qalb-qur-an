@@ -26,6 +26,10 @@ model User {
   goals          Goal[]
   recordings     Recording[]
   journalEntries JournalEntry[]
+  circles        CircleMember[]
+  posts          CirclePost[]
+  notifications  Notification[]
+  badges         UserBadge[]
 }
 
 model HifzProgress {
@@ -88,4 +92,80 @@ model JournalEntry {
   updatedAt      DateTime @updatedAt
 
   @@index([userId])
+}
+
+model Circle {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  inviteCode  String   @unique
+  creatorId   String
+  createdAt   DateTime @default(now())
+  
+  members     CircleMember[]
+  posts       CirclePost[]
+}
+
+model CircleMember {
+  id        String   @id @default(uuid())
+  circleId  String
+  userId    String
+  role      String   @default("member") // creator, member
+  joinedAt  DateTime @default(now())
+  
+  circle    Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([circleId, userId])
+}
+
+model CirclePost {
+  id             String   @id @default(uuid())
+  circleId       String
+  userId         String
+  content        String
+  ayahReference  String?
+  moodTags       String[] @default([])
+  createdAt      DateTime @default(now())
+  
+  circle         Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // post_created, circle_joined, etc.
+  title     String
+  message   String
+  data      Json?    // For holding extra info like circleId, postId
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Badge {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  description String
+  icon        String      // Name of the icon (e.g., ionicons name)
+  type        String      // streak, journal_count, circle_post, memorized_surah
+  requirement Int         // e.g. 7 days streak, 10 journal entries
+  createdAt   DateTime    @default(now())
+
+  users       UserBadge[]
+}
+
+model UserBadge {
+  id        String   @id @default(uuid())
+  userId    String
+  badgeId   String
+  earnedAt  DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
 }

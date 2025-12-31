@@ -67,10 +67,11 @@ export const hifzAPI = {
 export const journalAPI = {
     getEntries: () => api.get('/journal'),
     createEntry: (data) => api.post('/journal', data),
-    updateEntry: (id, data) => api.put(`/journal/${id}`, data),
     deleteEntry: (id) => api.delete(`/journal/${id}`),
     getPrompts: () => api.get('/journal/prompts'),
     getMoodStats: () => api.get('/journal/mood-stats'),
+    getDailyAyah: () => api.get('/journal/daily-ayah'),
+    exportJournal: () => api.get('/journal/export', { responseType: 'blob' }),
 };
 
 // Recordings API
@@ -78,6 +79,28 @@ export const recordingsAPI = {
     getRecordings: () => api.get('/recordings'),
     saveRecording: (data) => api.post('/recordings', data),
     deleteRecording: (id) => api.delete(`/recordings/${id}`),
+};
+
+// Circles API
+export const circlesAPI = {
+    getMyCircles: () => api.get('/circles'),
+    createCircle: (data) => api.post('/circles', data),
+    joinCircle: (inviteCode) => api.post('/circles/join', { inviteCode }),
+    getCircleFeed: (circleId) => api.get(`/circles/${circleId}/feed`),
+    postToCircle: (circleId, data) => api.post(`/circles/${circleId}/posts`, data),
+};
+
+// Notification API
+export const notificationAPI = {
+    getNotifications: () => api.get('/notifications'),
+    markAsRead: (id) => api.patch(`/notifications/${id}/read`),
+    markAllAsRead: () => api.post('/notifications/read-all'),
+};
+
+// Badge API
+export const badgeAPI = {
+    getMyBadges: () => api.get('/badges/my'),
+    getAllBadges: () => api.get('/badges'),
 };
 
 export default api;

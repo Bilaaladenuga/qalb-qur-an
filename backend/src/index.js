@@ -7,6 +7,9 @@ const authRoutes = require('./routes/auth');
 const hifzRoutes = require('./routes/hifz');
 const journalRoutes = require('./routes/journal');
 const recordingRoutes = require('./routes/recordings');
+const circleRoutes = require('./routes/circles');
+const notificationRoutes = require('./routes/notifications');
+const badgeRoutes = require('./routes/badges');
 
 const app = express();
 
@@ -25,7 +28,10 @@ app.get('/', (req, res) => {
       auth: '/api/auth',
       hifz: '/api/hifz',
       journal: '/api/journal',
-      recordings: '/api/recordings'
+      recordings: '/api/recordings',
+      circles: '/api/circles',
+      notifications: '/api/notifications',
+      badges: '/api/badges'
     }
   });
 });
@@ -35,6 +41,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/hifz', hifzRoutes);
 app.use('/api/journal', journalRoutes);
 app.use('/api/recordings', recordingRoutes);
+app.use('/api/circles', circleRoutes);
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/badges', badgeRoutes);
 
 // 404 Handler
 app.use((req, res) => {

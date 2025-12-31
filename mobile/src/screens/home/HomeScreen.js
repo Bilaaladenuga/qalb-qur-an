@@ -5,12 +5,14 @@ import {
     StyleSheet,
     ScrollView,
     RefreshControl,
+    TouchableOpacity,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchProgress, fetchGoals, fetchReviewQueue } from '../../store/slices/hifzSlice';
+import { fetchNotifications } from '../../store/slices/notificationSlice';
 import { Card } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 
@@ -18,6 +20,7 @@ const HomeScreen = ({ navigation }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
     const { stats, goals, reviewQueue, isLoading } = useSelector((state) => state.hifz);
+    const { unreadCount } = useSelector((state) => state.notifications);
 
     useEffect(() => {
         loadData();
@@ -27,6 +30,7 @@ const HomeScreen = ({ navigation }) => {
         dispatch(fetchProgress());
         dispatch(fetchGoals());
         dispatch(fetchReviewQueue());
+        dispatch(fetchNotifications());
     };
 
     // Get greeting based on time
@@ -72,13 +76,27 @@ const HomeScreen = ({ navigation }) => {
                         <Text style={styles.username}>{user?.username || 'Sister'}</Text>
                     </View>
                     <View style={styles.headerRight}>
+                        <TouchableOpacity
+                            style={styles.notificationBtn}
+                            onPress={() => navigation.navigate('Notifications')}
+                        >
+                            <Ionicons name="notifications-outline" size={24} color={colors.text} />
+                            {unreadCount > 0 && (
+                                <View style={styles.badgeContainer}>
+                                    <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
                         <View style={styles.streakBadge}>
                             <Ionicons name="flame" size={18} color="#F59E0B" />
                             <Text style={styles.streakValue}>{user?.currentStreak || 0}</Text>
                         </View>
-                        <View style={styles.avatarContainer}>
+                        <TouchableOpacity
+                            style={styles.avatarContainer}
+                            onPress={() => navigation.navigate('Profile')}
+                        >
                             <Ionicons name="person" size={24} color={colors.primary} />
-                        </View>
+                        </TouchableOpacity>
                     </View>
                 </View>
 
@@ -209,19 +227,19 @@ const HomeScreen = ({ navigation }) => {
                             icon="journal-outline"
                             label="Journal"
                             color={colors.secondary}
-                            onPress={() => navigation.navigate('Journal')}
+                            onPress={() => navigation.navigate('Journal', { screen: 'Journal' })}
                         />
                         <QuickAction
                             icon="mic-outline"
                             label="Record"
                             color={colors.accent}
-                            onPress={() => { }}
+                            onPress={() => navigation.navigate('Recording')}
                         />
                         <QuickAction
                             icon="people-outline"
                             label="Circles"
                             color="#EC4899"
-                            onPress={() => { }}
+                            onPress={() => navigation.navigate('Journal', { activeTab: 'circles' })}
                         />
                     </View>
                 </View>
@@ -273,6 +291,35 @@ const styles = StyleSheet.create({
         backgroundColor: colors.surface,
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    notificationBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: colors.surface,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.sm,
+        position: 'relative',
+    },
+    badgeContainer: {
+        position: 'absolute',
+        top: 2,
+        right: 2,
+        backgroundColor: colors.primary,
+        borderRadius: 10,
+        minWidth: 18,
+        height: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 4,
+        borderWidth: 2,
+        borderColor: colors.background,
+    },
+    badgeText: {
+        color: '#fff',
+        fontSize: 10,
+        fontWeight: 'bold',
     },
     headerRight: {
         flexDirection: 'row',

@@ -3,13 +3,27 @@ import { View, StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/home/HomeScreen';
 import HifzScreen from '../screens/hifz/HifzScreen';
 import JournalScreen from '../screens/journal/JournalScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import QuranListScreen from '../screens/quran/QuranListScreen';
+import SurahReaderScreen from '../screens/quran/SurahReaderScreen';
+import NotificationScreen from '../screens/notifications/NotificationScreen';
+import RecordingScreen from '../screens/hifz/RecordingScreen';
 import { colors, spacing } from '../theme';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+const RootStack = createNativeStackNavigator();
+
+const QuranStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="QuranList" component={QuranListScreen} />
+        <Stack.Screen name="SurahReader" component={SurahReaderScreen} />
+    </Stack.Navigator>
+);
 
 // Custom tab bar icon component
 const TabIcon = ({ focused, iconName, size }) => {
@@ -26,7 +40,7 @@ const TabIcon = ({ focused, iconName, size }) => {
     return <Ionicons name={iconName} size={size} color={colors.textMuted} />;
 };
 
-const MainNavigator = () => {
+const TabNavigator = () => {
     return (
         <Tab.Navigator
             screenOptions={{
@@ -56,6 +70,15 @@ const MainNavigator = () => {
                 }}
             />
             <Tab.Screen
+                name="Quran"
+                component={QuranStack}
+                options={{
+                    tabBarIcon: ({ focused, size }) => (
+                        <TabIcon focused={focused} iconName="library-outline" size={size} />
+                    ),
+                }}
+            />
+            <Tab.Screen
                 name="Journal"
                 component={JournalScreen}
                 options={{
@@ -74,6 +97,16 @@ const MainNavigator = () => {
                 }}
             />
         </Tab.Navigator>
+    );
+};
+
+const MainNavigator = () => {
+    return (
+        <RootStack.Navigator screenOptions={{ headerShown: false }}>
+            <RootStack.Screen name="MainTabs" component={TabNavigator} />
+            <RootStack.Screen name="Notifications" component={NotificationScreen} />
+            <RootStack.Screen name="Recording" component={RecordingScreen} />
+        </RootStack.Navigator>
     );
 };
 

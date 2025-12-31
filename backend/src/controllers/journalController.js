@@ -1,4 +1,7 @@
 const prisma = require('../lib/prisma');
+const { getAyahOfTheDay } = require('../utils/quranUtils');
+const { checkAndAwardBadges } = require('./gamificationService');
+const PDFDocument = require('pdfkit');
 
 /**
  * Get all journal entries for current user
@@ -19,6 +22,25 @@ const getEntries = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error fetching journal entries.'
+        });
+    }
+};
+
+/**
+ * Get the inspirational Ayah of the day
+ */
+const getDailyAyah = async (req, res) => {
+    try {
+        const ayah = getAyahOfTheDay();
+        res.json({
+            success: true,
+            data: ayah
+        });
+    } catch (error) {
+        console.error('Get daily ayah error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching daily ayah.'
         });
     }
 };
@@ -45,6 +67,9 @@ const createEntry = async (req, res) => {
                 moodTags: moodTags || []
             }
         });
+
+        // Trigger gamification check
+        checkAndAwardBadges(req.user.id, 'journal_count');
 
         res.status(201).json({
             success: true,
@@ -212,11 +237,105 @@ const getMoodStats = async (req, res) => {
     }
 };
 
+/**
+ * Export all journal entries to PDF
+ */
+const exportJournalToPDF = async (req, res) => {
+    try {
+        const entries = await prisma.journalEntry.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        if (!entries || entries.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No journal entries found to export.'
+            });
+        }
+
+        const doc = new PDFDocument({
+            margin: 50,
+            size: 'A4'
+        });
+
+        // Set response headers
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=Qalb_Quran_Journal_${req.user.username}.pdf`);
+
+        // Pipe to response
+        doc.pipe(res);
+
+        // Styling and Content
+        doc.fillColor('#8B5CF6').fontSize(26).text('My Spiritual Journey', { align: 'center' });
+        doc.fillColor('#6B7280').fontSize(14).text(`Reflections from the heart of ${req.user.username}`, { align: 'center' });
+        doc.moveDown(2);
+        doc.strokeColor('#E5E7EB').moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+        doc.moveDown(2);
+
+        entries.forEach((entry, index) => {
+            const dateStr = new Date(entry.createdAt).toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            // Entry Header
+            doc.fillColor('#4B5563').fontSize(10).text(dateStr, { continued: true });
+            if (entry.ayahReference) {
+                doc.fillColor('#10B981').text(`  |  Quran ${entry.ayahReference}`, { align: 'right' });
+            } else {
+                doc.text('', { align: 'right' });
+            }
+            doc.moveDown(0.5);
+
+            // Reflection Text
+            doc.fillColor('#1F2937').fontSize(12).text(entry.reflectionText, {
+                lineGap: 4,
+                align: 'justify'
+            });
+
+            // Moods
+            if (entry.moodTags && entry.moodTags.length > 0) {
+                doc.moveDown(0.5);
+                doc.fillColor('#6D28D9').fontSize(9).text(`Feeling: ${entry.moodTags.join(', ')}`);
+            }
+
+            doc.moveDown(2);
+
+            // Separator between entries except last
+            if (index < entries.length - 1) {
+                doc.strokeColor('#F3F4F6').moveTo(100, doc.y).lineTo(500, doc.y).stroke();
+                doc.moveDown(2);
+            }
+
+            // Simple page breaking
+            if (doc.y > 700) {
+                doc.addPage();
+            }
+        });
+
+        doc.end();
+
+    } catch (error) {
+        console.error('PDF Export error:', error);
+        if (!res.headersSent) {
+            res.status(500).json({
+                success: false,
+                message: 'Failed to generate PDF.'
+            });
+        }
+    }
+};
+
 module.exports = {
     getEntries,
     createEntry,
     updateEntry,
     deleteEntry,
     getPrompts,
-    getMoodStats
+    getMoodStats,
+    getDailyAyah,
+    exportJournalToPDF
 };
