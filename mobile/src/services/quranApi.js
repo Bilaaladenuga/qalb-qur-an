@@ -27,13 +27,25 @@ export const quranService = {
      * @param {number} chapterId 
      * @param {number} translationId - Default 131 (The Clear Quran)
      */
-    getVerses: (chapterId, translationId = 131) =>
+    getVerses: (chapterId) =>
         quranApi.get(`/verses/by_chapter/${chapterId}`, {
             params: {
                 language: 'en',
-                translations: translationId,
-                fields: 'text_uthmani,image_url',
-                per_page: 300 // Covers Al-Baqarah (286 ayahs) and all other surahs
+                fields: 'text_uthmani,image_url,verse_key',
+                per_page: 300
+            }
+        }),
+
+    /**
+     * Get translations for a surah
+     * @param {number} chapterId
+     * @param {number} translationId - Default 20 (Saheeh International)
+     */
+    getTranslations: (chapterId, translationId = 20) =>
+        quranApi.get(`/quran/translations/${translationId}`, {
+            params: {
+                chapter_number: chapterId,
+                fields: 'verse_key'
             }
         }),
 
@@ -43,7 +55,7 @@ export const quranService = {
      * @param {number} chapterId 
      */
     getAudio: (reciterId = 7, chapterId) =>
-        quranApi.get(`/chapter_recitations/${reciterId}/${chapterId}`),
+        quranApi.get(`/chapter_recitations/${reciterId}/${chapterId}?segments=true`),
 
     /**
      * Get list of available reciters

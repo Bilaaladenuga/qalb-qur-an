@@ -235,6 +235,88 @@ const postToCircle = async (req, res) => {
 };
 
 /**
+ * Toggle a reaction on a post
+ */
+const toggleReaction = async (req, res) => {
+    try {
+        const { postId } = req.params;
+        const { emoji } = req.body;
+
+        if (!emoji) {
+            return res.status(400).json({
+                success: false,
+                message: 'Emoji is required.'
+            });
+        }
+
+        // Check if reaction exists
+        const existingReaction = await prisma.postReaction.findFirst({
+            where: {
+                postId,
+                userId: req.user.id,
+                emoji
+            }
+        });
+
+        if (existingReaction) {
+            // Remove reaction
+            await prisma.postReaction.delete({
+                where: { id: existingReaction.id }
+            });
+
+            res.json({
+                success: true,
+                message: 'Reaction removed',
+                data: { action: 'removed' }
+            });
+        } else {
+            // Add reaction
+            await prisma.postReaction.create({
+                data: {
+                    postId,
+                    userId: req.user.id,
+                    emoji
+                }
+            });
+
+            // Notify post owner (unless it's self)
+            const post = await prisma.circlePost.findUnique({
+                where: { id: postId },
+                select: { userId: true, content: true }
+            });
+
+            if (post && post.userId !== req.user.id) {
+                // Determine notification title based on emoji
+                let reactionTitle = 'New Reaction';
+                if (emoji === '❤️') reactionTitle = 'Sent you love ❤️';
+                if (emoji === '🤲') reactionTitle = 'Said Ameen 🤲';
+                if (emoji === '🌟') reactionTitle = 'Inspired by you 🌟';
+
+                await createNotification({
+                    userId: post.userId,
+                    type: 'reaction_added',
+                    title: reactionTitle,
+                    message: `${req.user.username} reacted to your reflection: "${post.content.substring(0, 30)}..."`,
+                    data: { postId, emoji }
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Reaction added',
+                data: { action: 'added' }
+            });
+        }
+    } catch (error) {
+        console.error('Toggle reaction error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error toggling reaction.'
+        });
+    }
+};
+
+/**
  * Get circle feed (latest posts)
  */
 const getCircleFeed = async (req, res) => {
@@ -266,6 +348,12 @@ const getCircleFeed = async (req, res) => {
                         username: true,
                         avatarUrl: true
                     }
+                },
+                reactions: {
+                    select: {
+                        userId: true,
+                        emoji: true
+                    }
                 }
             },
             orderBy: { createdAt: 'desc' },
@@ -290,5 +378,6 @@ module.exports = {
     joinCircle,
     getMyCircles,
     postToCircle,
-    getCircleFeed
+    getCircleFeed,
+    toggleReaction
 };

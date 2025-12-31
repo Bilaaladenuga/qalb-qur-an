@@ -18,12 +18,29 @@ export const fetchSurahVerses = createAsyncThunk(
     'quran/fetchSurahVerses',
     async (chapterId, { rejectWithValue }) => {
         try {
-            const response = await quranService.getVerses(chapterId);
+            const [versesResponse, translationsResponse] = await Promise.all([
+                quranService.getVerses(chapterId),
+                quranService.getTranslations(chapterId)
+            ]);
+
+            const verses = versesResponse.data.verses;
+            const translations = translationsResponse.data.translations;
+
+            // Merge translations into verses
+            const mergedVerses = verses.map(verse => {
+                const translation = translations.find(t => t.verse_key === verse.verse_key);
+                return {
+                    ...verse,
+                    translations: translation ? [{ text: translation.text }] : []
+                };
+            });
+
             return {
                 chapterId,
-                verses: response.data.verses
+                verses: mergedVerses
             };
         } catch (error) {
+            console.error('Fetch verses error:', error.response?.data || error.message);
             return rejectWithValue(error.response?.data?.message || 'Failed to fetch verses');
         }
     }
@@ -49,6 +66,7 @@ const initialState = {
     currentSurah: null,
     verses: [],
     audioUrls: {}, // chapterId -> audioUrl
+    audioTimestamps: {}, // chapterId -> timestamps array
     isLoading: false,
     isVersesLoading: false,
     error: null,
@@ -108,6 +126,7 @@ const quranSlice = createSlice({
             // Fetch Audio
             .addCase(fetchAudio.fulfilled, (state, action) => {
                 state.audioUrls[action.payload.chapterId] = action.payload.audioData.audio_url;
+                state.audioTimestamps[action.payload.chapterId] = action.payload.audioData.timestamps;
             });
     }
 });

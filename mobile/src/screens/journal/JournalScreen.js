@@ -29,7 +29,7 @@ import {
     postToCircle
 } from '../../store/slices/circleSlice';
 import { Card, Button, Input } from '../../components';
-import { journalAPI } from '../../services/api';
+import { journalAPI, circlesAPI } from '../../services/api';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 import { Platform } from 'react-native';
 
@@ -37,6 +37,7 @@ const JournalScreen = () => {
     const dispatch = useDispatch();
     const { entries, prompts, dailyAyah, isLoading: journalLoading } = useSelector((state) => state.journal);
     const { myCircles, activeCircle, feeds, isLoading: circlesLoading } = useSelector((state) => state.circles);
+    const { user } = useSelector((state) => state.auth);
 
     const [activeTab, setActiveTab] = useState('journal');
     const [showAddModal, setShowAddModal] = useState(false);
@@ -153,6 +154,18 @@ const JournalScreen = () => {
         setCircleReflection('');
     };
 
+    const handleReaction = async (postId, emoji) => {
+        try {
+            await circlesAPI.toggleReaction(postId, emoji);
+            // Ideally we should update the redux state optimistically or re-fetch feed
+            if (activeCircle) {
+                dispatch(fetchCircleFeed(activeCircle.id));
+            }
+        } catch (error) {
+            console.error('Reaction error:', error);
+        }
+    };
+
     const handleSelectCircle = (circle) => {
         dispatch(setActiveCircle(circle));
         dispatch(fetchCircleFeed(circle.id));
@@ -238,22 +251,58 @@ const JournalScreen = () => {
         </TouchableOpacity>
     );
 
-    const renderPost = ({ item }) => (
-        <Card style={styles.postCard}>
-            <View style={styles.postHeader}>
-                <View style={styles.postUser}>
-                    <View style={styles.userAvatar}>
-                        <Text style={styles.avatarText}>{item.user.username[0]}</Text>
-                    </View>
-                    <View>
-                        <Text style={styles.postUsername}>{item.user.username}</Text>
-                        <Text style={styles.postTime}>{formatDate(item.createdAt)}</Text>
+    const renderPost = ({ item }) => {
+        const reactions = item.reactions || [];
+        const reactionCounts = {};
+        reactions.forEach(r => {
+            reactionCounts[r.emoji] = (reactionCounts[r.emoji] || 0) + 1;
+        });
+
+        const myReactions = reactions.filter(r => r.userId === user?.id).map(r => r.emoji);
+
+        return (
+            <Card style={styles.postCard}>
+                <View style={styles.postHeader}>
+                    <View style={styles.postUser}>
+                        <View style={styles.userAvatar}>
+                            <Text style={styles.avatarText}>{item.user.username[0]}</Text>
+                        </View>
+                        <View>
+                            <Text style={styles.postUsername}>{item.user.username}</Text>
+                            <Text style={styles.postTime}>{formatDate(item.createdAt)}</Text>
+                        </View>
                     </View>
                 </View>
-            </View>
-            <Text style={styles.postContent}>{item.content}</Text>
-        </Card>
-    );
+                <Text style={styles.postContent}>{item.content}</Text>
+
+                {/* Reactions UI */}
+                <View style={styles.reactionsContainer}>
+                    <View style={styles.reactionButtons}>
+                        {['🤲', '❤️', '🌟', '💭'].map(emoji => (
+                            <TouchableOpacity
+                                key={emoji}
+                                style={[
+                                    styles.reactionBtn,
+                                    myReactions.includes(emoji) && styles.reactionBtnActive
+                                ]}
+                                onPress={() => handleReaction(item.id, emoji)}
+                            >
+                                <Text style={styles.reactionEmoji}>{emoji}</Text>
+                                {reactionCounts[emoji] > 0 && (
+                                    <Text style={[
+                                        styles.reactionCount,
+                                        myReactions.includes(emoji) && styles.reactionCountActive
+                                    ]}>
+                                        {reactionCounts[emoji]}
+                                    </Text>
+                                )}
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+            </Card>
+        );
+    };
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
@@ -1013,6 +1062,42 @@ const styles = StyleSheet.create({
         color: colors.textSecondary,
     },
     moodLabelSelected: {
+        color: colors.primary,
+    },
+    reactionsContainer: {
+        marginTop: spacing.md,
+        paddingTop: spacing.sm,
+        borderTopWidth: 1,
+        borderTopColor: colors.border,
+    },
+    reactionButtons: {
+        flexDirection: 'row',
+        gap: spacing.sm,
+    },
+    reactionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 4,
+        borderRadius: borderRadius.full,
+        backgroundColor: colors.surface,
+        borderWidth: 1,
+        borderColor: 'transparent',
+    },
+    reactionBtnActive: {
+        backgroundColor: colors.primary + '15',
+        borderColor: colors.primary + '30',
+    },
+    reactionEmoji: {
+        fontSize: 14,
+        marginRight: 4,
+    },
+    reactionCount: {
+        fontSize: 10,
+        color: colors.textSecondary,
+        fontWeight: '600',
+    },
+    reactionCountActive: {
         color: colors.primary,
     },
 });

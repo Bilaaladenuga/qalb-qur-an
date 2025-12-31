@@ -30,6 +30,7 @@ model User {
   posts          CirclePost[]
   notifications  Notification[]
   badges         UserBadge[]
+  reactions      PostReaction[]
 }
 
 model HifzProgress {
@@ -130,6 +131,21 @@ model CirclePost {
   
   circle         Circle   @relation(fields: [circleId], references: [id], onDelete: Cascade)
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reactions      PostReaction[]
+}
+
+model PostReaction {
+  id        String   @id @default(uuid())
+  postId    String
+  userId    String
+  emoji     String   // e.g., "heart", "pray", "star", "thought"
+  createdAt DateTime @default(now())
+
+  post      CirclePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
 }
 
 model Notification {

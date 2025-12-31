@@ -88,6 +88,7 @@ export const circlesAPI = {
     joinCircle: (inviteCode) => api.post('/circles/join', { inviteCode }),
     getCircleFeed: (circleId) => api.get(`/circles/${circleId}/feed`),
     postToCircle: (circleId, data) => api.post(`/circles/${circleId}/posts`, data),
+    toggleReaction: (postId, emoji) => api.post(`/circles/posts/${postId}/reactions`, { emoji }),
 };
 
 // Notification API

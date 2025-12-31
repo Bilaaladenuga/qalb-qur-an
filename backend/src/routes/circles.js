@@ -5,7 +5,8 @@ const {
     joinCircle,
     getMyCircles,
     postToCircle,
-    getCircleFeed
+    getCircleFeed,
+    toggleReaction
 } = require('../controllers/circleController');
 const { authenticate } = require('../middleware/auth');
 
@@ -20,5 +21,6 @@ router.post('/join', joinCircle);
 // Circle feed/posts
 router.get('/:circleId/feed', getCircleFeed);
 router.post('/:circleId/posts', postToCircle);
+router.post('/posts/:postId/reactions', toggleReaction);
 
 module.exports = router;
