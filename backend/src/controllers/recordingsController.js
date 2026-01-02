@@ -44,7 +44,9 @@ const saveRecording = async (req, res) => {
                 surahName,
                 ayahRange,
                 audioUrl,
-                duration: duration || 0
+                duration: duration || 0,
+                tajwidFeedback: req.body.tajwidFeedback || null,
+                sharedWithMentor: req.body.sharedWithMentor || false
             }
         });
 

@@ -10,6 +10,7 @@ const recordingRoutes = require('./routes/recordings');
 const circleRoutes = require('./routes/circles');
 const notificationRoutes = require('./routes/notifications');
 const badgeRoutes = require('./routes/badges');
+const tajwidRoutes = require('./routes/tajwidRoutes');
 
 const app = express();
 
@@ -31,7 +32,8 @@ app.get('/', (req, res) => {
       recordings: '/api/recordings',
       circles: '/api/circles',
       notifications: '/api/notifications',
-      badges: '/api/badges'
+      badges: '/api/badges',
+      tajwid: '/api/tajwid'
     }
   });
 });
@@ -44,6 +46,7 @@ app.use('/api/recordings', recordingRoutes);
 app.use('/api/circles', circleRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/badges', badgeRoutes);
+app.use('/api/tajwid', tajwidRoutes);
 
 // 404 Handler
 app.use((req, res) => {

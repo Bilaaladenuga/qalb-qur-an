@@ -13,6 +13,7 @@ model User {
   id                 String   @id @default(uuid())
   email              String   @unique
   username           String
+  gender             String?  // female, other (Muslimah focus)
   passwordHash       String
   avatarUrl          String?
   languagePreference String   @default("en")
@@ -31,6 +32,7 @@ model User {
   notifications  Notification[]
   badges         UserBadge[]
   reactions      PostReaction[]
+  tajwidProgress TajwidProgress[]
 }
 
 model HifzProgress {
@@ -77,6 +79,8 @@ model Recording {
   ayahRange String
   audioUrl  String
   duration  Int      // seconds
+  tajwidFeedback  Json?     // Analysis results
+  sharedWithMentor Boolean   @default(false)
   createdAt DateTime @default(now())
 
   @@index([userId])
@@ -101,6 +105,7 @@ model Circle {
   description String?
   inviteCode  String   @unique
   creatorId   String
+  privacySettings Json?    // { audioOnly: boolean, allowDownloads: boolean }
   createdAt   DateTime @default(now())
   
   members     CircleMember[]
@@ -184,4 +189,18 @@ model UserBadge {
   badge     Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([userId, badgeId])
+}
+
+model TajwidProgress {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId    String   // Identifier for the lesson
+  completed   Boolean  @default(false)
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, lessonId])
+  @@index([userId])
 }

@@ -61,6 +61,18 @@ export const postToCircle = createAsyncThunk(
     }
 );
 
+export const deleteCircle = createAsyncThunk(
+    'circles/deleteCircle',
+    async (circleId, { rejectWithValue }) => {
+        try {
+            await circlesAPI.deleteCircle(circleId);
+            return circleId;
+        } catch (error) {
+            return rejectWithValue(error.response?.data?.message || 'Error deleting circle');
+        }
+    }
+);
+
 const circleSlice = createSlice({
     name: 'circles',
     initialState: {
@@ -110,6 +122,13 @@ const circleSlice = createSlice({
             .addCase(postToCircle.fulfilled, (state, action) => {
                 if (state.feeds[action.payload.circleId]) {
                     state.feeds[action.payload.circleId].unshift(action.payload.post);
+                }
+            })
+            // Delete Circle
+            .addCase(deleteCircle.fulfilled, (state, action) => {
+                state.myCircles = state.myCircles.filter(c => c.id !== action.payload);
+                if (state.activeCircle?.id === action.payload) {
+                    state.activeCircle = null;
                 }
             });
     },

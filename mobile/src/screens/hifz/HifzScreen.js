@@ -8,6 +8,7 @@ import {
     FlatList,
     Modal,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -17,20 +18,37 @@ import {
     fetchProgress,
     addProgress,
     fetchGoals,
-    createGoal
+    createGoal,
+    fetchReviewQueue,
+    reviewProgress
 } from '../../store/slices/hifzSlice';
+import { Audio } from 'expo-av';
 import { Card, Button, Input, QuranMap } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../theme';
+import { quranService } from '../../services/quranApi';
 
 import { SURAHS } from '../../utils/surahs';
 
 const HifzScreen = () => {
     const dispatch = useDispatch();
-    const { progress, stats, goals, isLoading } = useSelector((state) => state.hifz);
+    const { progress, stats, goals, reviewQueue, isLoading } = useSelector((state) => state.hifz);
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [showGoalModal, setShowGoalModal] = useState(false);
+    const [showReviewModal, setShowReviewModal] = useState(false);
+    const [currentReviewItem, setCurrentReviewItem] = useState(null);
+    const [isFlipped, setIsFlipped] = useState(false);
+
+    // Recording State
+    const [recording, setRecording] = useState(null);
+    const [sound, setSound] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingUri, setRecordingUri] = useState(null);
     const [activeTab, setActiveTab] = useState('progress');
+
+    // Verses for self-correction
+    const [versesData, setVersesData] = useState([]);
+    const [isVersesLoading, setIsVersesLoading] = useState(false);
 
     // Form states
     const [selectedSurah, setSelectedSurah] = useState(null);
@@ -43,9 +61,15 @@ const HifzScreen = () => {
     const [goalDescription, setGoalDescription] = useState('');
 
     useEffect(() => {
-        dispatch(fetchProgress());
-        dispatch(fetchGoals());
-    }, []);
+        const loadData = async () => {
+            await Promise.all([
+                dispatch(fetchProgress()),
+                dispatch(fetchGoals()),
+                dispatch(fetchReviewQueue())
+            ]);
+        };
+        loadData();
+    }, [dispatch]);
 
     const handleAddProgress = () => {
         if (!selectedSurah || !ayahStart || !ayahEnd) {
@@ -108,6 +132,139 @@ const HifzScreen = () => {
             case 'mastered': return colors.accent;
             default: return colors.textMuted;
         }
+    };
+
+    const fetchVersesForReview = async (item) => {
+        setIsVersesLoading(true);
+        try {
+            const response = await quranService.getVerses(item.surahId);
+            const allVerses = response.data.verses;
+
+            // Filter verses based on ayahStart and ayahEnd
+            const filtered = allVerses.filter(v =>
+                v.verse_number >= item.ayahStart &&
+                v.verse_number <= item.ayahEnd
+            );
+
+            setVersesData(filtered);
+        } catch (error) {
+            console.error('Error fetching verses for review:', error);
+            Alert.alert('Error', 'Failed to load Quran verses for self-correction.');
+        } finally {
+            setIsVersesLoading(false);
+        }
+    };
+
+    const startReviewSession = () => {
+        if (reviewQueue && reviewQueue.length > 0) {
+            const firstItem = reviewQueue[0];
+            setCurrentReviewItem(firstItem);
+            setShowReviewModal(true);
+            setIsFlipped(false);
+            setRecording(null);
+            setRecordingUri(null);
+            fetchVersesForReview(firstItem);
+        } else {
+            Alert.alert("All caught up!", "No verses due for review right now.");
+        }
+    };
+
+    // Audio Logic
+    const startRecording = async () => {
+        try {
+            const permission = await Audio.requestPermissionsAsync();
+            if (permission.status === 'granted') {
+                await Audio.setAudioModeAsync({
+                    allowsRecordingIOS: true,
+                    playsInSilentModeIOS: true,
+                });
+                const { recording } = await Audio.Recording.createAsync(
+                    Audio.RecordingOptionsPresets.HIGH_QUALITY
+                );
+                setRecording(recording);
+                setIsRecording(true);
+            } else {
+                Alert.alert("Permission needed", "Please grant microphone access to record.");
+            }
+        } catch (err) {
+            console.error('Failed to start recording', err);
+        }
+    };
+
+    const stopRecording = async () => {
+        setRecording(undefined);
+        setIsRecording(false);
+        await recording.stopAndUnloadAsync();
+        const uri = recording.getURI();
+        setRecordingUri(uri);
+
+        // Auto-play for verification (optional, improved UX)
+        const { sound } = await Audio.Sound.createAsync({ uri });
+        setSound(sound);
+        // await sound.playAsync(); 
+    };
+
+    const playRecording = async () => {
+        if (recordingUri) {
+            const { sound } = await Audio.Sound.createAsync({ uri: recordingUri });
+            setSound(sound);
+            await sound.playAsync();
+        }
+    };
+
+    const handleReviewSubmit = async (quality) => {
+        if (!currentReviewItem) return;
+
+        dispatch(reviewProgress({
+            id: currentReviewItem.id,
+            quality
+        }));
+
+        // Move to next item or close
+        // Safeguard reviewQueue in case it's undefined
+        const queue = reviewQueue || [];
+        const currentIndex = queue.findIndex(i => i.id === currentReviewItem.id);
+
+        if (currentIndex < queue.length - 1) {
+            const nextItem = queue[currentIndex + 1];
+            setCurrentReviewItem(nextItem);
+            setIsFlipped(false);
+            setRecordingUri(null);
+            fetchVersesForReview(nextItem);
+        } else {
+            setShowReviewModal(false);
+            setCurrentReviewItem(null);
+            Alert.alert('Session Complete', 'Great job! You\'ve reviewed all pending items. 🎉');
+        }
+    };
+
+    const handleMarkAsMemorized = async () => {
+        if (!currentReviewItem) return;
+
+        Alert.alert(
+            'Mark as Memorized',
+            'Have you successfully memorized this portion by heart? This will move it to your Mastered list.',
+            [
+                { text: 'Not yet', style: 'cancel' },
+                {
+                    text: 'Yes, Alhamdulillah!',
+                    onPress: async () => {
+                        // Import updateProgress at top level or handle here
+                        const { updateProgress } = require('../../store/slices/hifzSlice');
+                        await dispatch(updateProgress({
+                            id: currentReviewItem.id,
+                            data: {
+                                status: 'mastered',
+                                memorizedDate: new Date().toISOString()
+                            }
+                        })).unwrap();
+
+                        // Close or move to next
+                        handleReviewSubmit(3); // Count as perfect review too
+                    }
+                }
+            ]
+        );
     };
 
     const renderProgressItem = ({ item }) => (
@@ -189,6 +346,34 @@ const HifzScreen = () => {
                     <Ionicons name="add" size={24} color={colors.text} />
                 </TouchableOpacity>
             </View>
+
+            {/* Review Queue Hero */}
+            {reviewQueue && reviewQueue.length > 0 && (
+                <View style={styles.reviewHero}>
+                    <LinearGradient
+                        colors={[colors.primary, colors.primaryDark]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.reviewHeroGradient}
+                    >
+                        <View style={styles.reviewHeroContent}>
+                            <View>
+                                <Text style={styles.reviewHeroTitle}>Review Time! 🧠</Text>
+                                <Text style={styles.reviewHeroSubtitle}>
+                                    {reviewQueue.length} items due for spaced repetition
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                style={styles.startReviewButton}
+                                onPress={() => startReviewSession()}
+                            >
+                                <Text style={styles.startReviewText}>Start</Text>
+                                <Ionicons name="play" size={16} color={colors.primary} />
+                            </TouchableOpacity>
+                        </View>
+                    </LinearGradient>
+                </View>
+            )}
 
             {/* Stats Summary */}
             <View style={styles.statsRow}>
@@ -443,6 +628,140 @@ const HifzScreen = () => {
                             />
                         </ScrollView>
                     </View>
+                </View>
+            </Modal>
+
+            {/* Review Modal */}
+            <Modal
+                visible={showReviewModal}
+                animationType="fade"
+                transparent={true}
+                onRequestClose={() => setShowReviewModal(false)}
+            >
+                <View style={styles.reviewModalContent}>
+                    {currentReviewItem && (
+                        <View style={styles.reviewCard}>
+                            <Text style={styles.reviewSurahName}>
+                                {currentReviewItem.surahName}
+                            </Text>
+                            <Text style={styles.reviewAyahRange}>
+                                Ayah {currentReviewItem.ayahStart} - {currentReviewItem.ayahEnd}
+                            </Text>
+
+                            <View style={{ height: 2, width: 50, backgroundColor: colors.primary, marginTop: spacing.md }} />
+
+                            {/* Recording Controls */}
+                            {!isFlipped && (
+                                <View style={styles.recordingSection}>
+                                    {recordingUri ? (
+                                        <View style={styles.playbackContainer}>
+                                            <TouchableOpacity style={styles.playButton} onPress={playRecording}>
+                                                <Ionicons name="play-circle" size={48} color={colors.primary} />
+                                                <Text style={styles.playText}>Listen to your Hifz</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity onPress={() => setRecordingUri(null)}>
+                                                <Text style={styles.retryText}>Retry</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    ) : (
+                                        <TouchableOpacity
+                                            style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
+                                            onPress={isRecording ? stopRecording : startRecording}
+                                        >
+                                            <Ionicons
+                                                name={isRecording ? "stop" : "mic"}
+                                                size={32}
+                                                color="#fff"
+                                            />
+                                            <Text style={styles.recordBtnText}>
+                                                {isRecording ? "Stop & Check" : "Tap to Recite"}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            )}
+
+                            {/* Verification Reveal */}
+                            <TouchableOpacity
+                                style={styles.revealButton}
+                                onPress={() => setIsFlipped(!isFlipped)}
+                            >
+                                <Ionicons name={isFlipped ? "eye-off-outline" : "eye-outline"} size={20} color={colors.primary} />
+                                <Text style={styles.revealText}>
+                                    {isFlipped ? 'Hide Verse' : 'Reveal Verse'}
+                                </Text>
+                            </TouchableOpacity>
+
+                            {isFlipped && (
+                                <>
+                                    <View style={styles.verseScrollContainer}>
+                                        <ScrollView
+                                            showsVerticalScrollIndicator={false}
+                                            contentContainerStyle={styles.verseScrollContent}
+                                        >
+                                            {isVersesLoading ? (
+                                                <ActivityIndicator size="small" color={colors.primary} />
+                                            ) : (
+                                                versesData.map((verse, index) => (
+                                                    <View key={index} style={styles.verseItem}>
+                                                        <Text style={styles.arabicReviewText}>
+                                                            {verse.text_uthmani}
+                                                        </Text>
+                                                        <View style={styles.verseNumberBadgeSm}>
+                                                            <Text style={styles.verseNumberTextSm}>{verse.verse_number}</Text>
+                                                        </View>
+                                                    </View>
+                                                ))
+                                            )}
+                                        </ScrollView>
+                                    </View>
+
+                                    <TouchableOpacity
+                                        style={styles.masteredButton}
+                                        onPress={handleMarkAsMemorized}
+                                    >
+                                        <Ionicons name="trophy-outline" size={18} color={colors.accent} />
+                                        <Text style={styles.masteredButtonText}>Mark as Fully Memorized</Text>
+                                    </TouchableOpacity>
+
+                                    <Text style={{ marginTop: spacing.lg, color: colors.textSecondary, marginBottom: spacing.sm, textAlign: 'center' }}>
+                                        How was your recitation?
+                                    </Text>
+
+                                    <View style={styles.reviewActions}>
+                                        <TouchableOpacity
+                                            style={[styles.reviewBtn, styles.reviewBtnHard]}
+                                            onPress={() => handleReviewSubmit(1)}
+                                        >
+                                            <Text style={styles.reviewEmoji}>😰</Text>
+                                            <Text style={[styles.reviewBtnText, { color: colors.error }]}>Hard</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.reviewBtn, styles.reviewBtnGood]}
+                                            onPress={() => handleReviewSubmit(2)}
+                                        >
+                                            <Text style={styles.reviewEmoji}>🙂</Text>
+                                            <Text style={[styles.reviewBtnText, { color: colors.warning }]}>Good</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity
+                                            style={[styles.reviewBtn, styles.reviewBtnPerfect]}
+                                            onPress={() => handleReviewSubmit(3)}
+                                        >
+                                            <Text style={styles.reviewEmoji}>🤩</Text>
+                                            <Text style={[styles.reviewBtnText, { color: colors.success }]}>Perfect</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </>
+                            )}
+
+                            <Button
+                                title="Exit Session"
+                                variant="ghost"
+                                onPress={() => setShowReviewModal(false)}
+                                style={{ marginTop: spacing.xl }}
+                            />
+                        </View>
+                    )}
                 </View>
             </Modal>
         </SafeAreaView>
@@ -749,6 +1068,232 @@ const styles = StyleSheet.create({
     modalButton: {
         marginTop: spacing.md,
         marginBottom: spacing.xl,
+    },
+    reviewHero: {
+        marginHorizontal: spacing.lg,
+        marginBottom: spacing.md,
+        borderRadius: borderRadius.xl, // Softer curves
+        overflow: 'hidden',
+        elevation: 2, // Softer shadow
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 12,
+    },
+    reviewHeroGradient: {
+        padding: spacing.xl, // More breathing room
+    },
+    reviewHeroContent: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    reviewHeroTitle: {
+        color: '#fff',
+        fontSize: typography.fontSize.xxl, // Larger, more impactful
+        fontWeight: '700',
+        marginBottom: spacing.xs,
+        letterSpacing: 0.5,
+    },
+    reviewHeroSubtitle: {
+        color: 'rgba(255,255,255,0.9)',
+        fontSize: typography.fontSize.md,
+    },
+    startReviewButton: {
+        backgroundColor: 'rgba(255,255,255,0.2)', // Glass effect
+        paddingHorizontal: spacing.lg,
+        paddingVertical: spacing.md,
+        borderRadius: borderRadius.full,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.3)',
+    },
+    startReviewText: {
+        color: '#fff',
+        fontWeight: '600',
+        fontSize: typography.fontSize.md,
+    },
+    reviewModalContent: {
+        flex: 1,
+        backgroundColor: 'rgba(26, 42, 38, 0.95)', // Deep spiritual green overlay
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: spacing.lg,
+    },
+    reviewCard: {
+        width: '100%',
+        backgroundColor: '#FDFBF7', // Parchment white
+        borderRadius: 24,
+        padding: spacing.xl,
+        alignItems: 'center',
+        elevation: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(184, 158, 101, 0.2)', // Subtle gold border
+    },
+    reviewSurahName: {
+        fontSize: 32,
+        fontFamily: 'Amiri-Bold',
+        color: '#2A4A3E', // Rich deep green
+        marginBottom: spacing.xs,
+    },
+    reviewAyahRange: {
+        fontSize: 16,
+        fontWeight: '500',
+        color: '#B89E65', // Bronze/Gold
+        letterSpacing: 1,
+        textTransform: 'uppercase',
+    },
+    recordingSection: {
+        width: '100%',
+        marginVertical: spacing.xl,
+        alignItems: 'center',
+    },
+    recordBtn: {
+        width: 140,
+        height: 140,
+        borderRadius: 70,
+        backgroundColor: colors.primary,
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: colors.primary,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+    },
+    recordBtnActive: {
+        backgroundColor: colors.error,
+        transform: [{ scale: 1.1 }],
+    },
+    recordBtnText: {
+        color: '#fff',
+        fontWeight: '700',
+        marginTop: spacing.sm,
+        fontSize: 14,
+    },
+    playbackContainer: {
+        alignItems: 'center',
+    },
+    playButton: {
+        alignItems: 'center',
+        backgroundColor: 'rgba(184, 158, 101, 0.1)',
+        padding: spacing.xl,
+        borderRadius: 100,
+    },
+    playText: {
+        marginTop: spacing.sm,
+        color: '#B89E65',
+        fontWeight: '600',
+    },
+    retryText: {
+        color: colors.textSecondary,
+        marginTop: spacing.md,
+        textDecorationLine: 'underline',
+    },
+    revealButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#2A4A3E',
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        borderRadius: 100,
+        marginVertical: spacing.md,
+    },
+    revealText: {
+        color: '#fff',
+        fontWeight: '600',
+        marginLeft: spacing.sm,
+    },
+    verseScrollContainer: {
+        maxHeight: 300,
+        width: '100%',
+        backgroundColor: '#F7F3E9', // Aged paper color
+        borderRadius: 16,
+        padding: spacing.lg,
+        borderWidth: 1,
+        borderColor: 'rgba(184, 158, 101, 0.15)',
+        marginVertical: spacing.lg,
+    },
+    verseScrollContent: {
+        paddingBottom: spacing.lg,
+    },
+    verseItem: {
+        marginBottom: spacing.xl,
+        alignItems: 'center',
+    },
+    arabicReviewText: {
+        fontSize: 28,
+        fontFamily: 'Amiri-Regular',
+        textAlign: 'center',
+        lineHeight: 52,
+        color: '#1A2A26',
+    },
+    verseNumberBadgeSm: {
+        backgroundColor: 'rgba(184, 158, 101, 0.2)',
+        paddingHorizontal: 12,
+        paddingVertical: 4,
+        borderRadius: 20,
+        marginTop: spacing.md,
+    },
+    verseNumberTextSm: {
+        fontSize: 12,
+        color: '#8E733E',
+        fontWeight: 'bold',
+    },
+    masteredButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#B89E65',
+        paddingHorizontal: spacing.xl,
+        paddingVertical: spacing.md,
+        borderRadius: 100,
+        marginBottom: spacing.xl,
+        elevation: 3,
+    },
+    masteredButtonText: {
+        color: '#fff',
+        fontWeight: '700',
+        marginLeft: spacing.sm,
+    },
+    reviewActions: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+        gap: spacing.md,
+    },
+    reviewBtn: {
+        flex: 1,
+        paddingVertical: spacing.md,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1.5,
+    },
+    reviewBtnHard: {
+        borderColor: '#E74C3C',
+        backgroundColor: '#FDEDEC',
+    },
+    reviewBtnGood: {
+        borderColor: '#F39C12',
+        backgroundColor: '#FEF5E7',
+    },
+    reviewBtnPerfect: {
+        borderColor: '#27AE60',
+        backgroundColor: '#E9F7EF',
+    },
+    reviewBtnText: {
+        fontSize: 13,
+        fontWeight: '700',
+        marginTop: 4,
+    },
+    reviewEmoji: {
+        fontSize: 24,
     },
 });
 

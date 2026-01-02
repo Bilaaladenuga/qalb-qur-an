@@ -6,7 +6,8 @@ const {
     getMyCircles,
     postToCircle,
     getCircleFeed,
-    toggleReaction
+    toggleReaction,
+    deleteCircle
 } = require('../controllers/circleController');
 const { authenticate } = require('../middleware/auth');
 
@@ -17,6 +18,7 @@ router.use(authenticate);
 router.get('/', getMyCircles);
 router.post('/', createCircle);
 router.post('/join', joinCircle);
+router.delete('/:circleId', deleteCircle);
 
 // Circle feed/posts
 router.get('/:circleId/feed', getCircleFeed);

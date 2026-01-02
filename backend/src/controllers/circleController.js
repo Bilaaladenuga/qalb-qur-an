@@ -26,6 +26,7 @@ const createCircle = async (req, res) => {
                 description,
                 inviteCode,
                 creatorId: req.user.id,
+                privacySettings: req.body.privacySettings || { audioOnly: true, allowDownloads: false },
                 members: {
                     create: {
                         userId: req.user.id,
@@ -373,11 +374,55 @@ const getCircleFeed = async (req, res) => {
     }
 };
 
+/**
+ * Delete a circle (Creator only)
+ */
+const deleteCircle = async (req, res) => {
+    try {
+        const { circleId } = req.params;
+
+        // Check ownership
+        const circle = await prisma.circle.findUnique({
+            where: { id: circleId }
+        });
+
+        if (!circle) {
+            return res.status(404).json({
+                success: false,
+                message: 'Circle not found.'
+            });
+        }
+
+        if (circle.creatorId !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the creator can delete this circle.'
+            });
+        }
+
+        await prisma.circle.delete({
+            where: { id: circleId }
+        });
+
+        res.json({
+            success: true,
+            message: 'Circle deleted successfully.'
+        });
+    } catch (error) {
+        console.error('Delete circle error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error deleting circle.'
+        });
+    }
+};
+
 module.exports = {
     createCircle,
     joinCircle,
     getMyCircles,
     postToCircle,
     getCircleFeed,
-    toggleReaction
+    toggleReaction,
+    deleteCircle
 };

@@ -7,7 +7,7 @@ const prisma = require('../lib/prisma');
  */
 const register = async (req, res) => {
     try {
-        const { email, username, password } = req.body;
+        const { email, username, password, gender } = req.body;
 
         // Validate input
         if (!email || !username || !password) {
@@ -38,12 +38,14 @@ const register = async (req, res) => {
             data: {
                 email,
                 username,
-                passwordHash
+                passwordHash,
+                gender: gender || 'female' // Default to female for the core audience
             },
             select: {
                 id: true,
                 email: true,
                 username: true,
+                gender: true,
                 avatarUrl: true,
                 languagePreference: true,
                 currentStreak: true,
@@ -129,6 +131,7 @@ const login = async (req, res) => {
                     id: user.id,
                     email: user.email,
                     username: user.username,
+                    gender: user.gender,
                     avatarUrl: user.avatarUrl,
                     languagePreference: user.languagePreference,
                     currentStreak: user.currentStreak,
@@ -171,19 +174,21 @@ const getProfile = async (req, res) => {
  */
 const updateProfile = async (req, res) => {
     try {
-        const { username, avatarUrl, languagePreference } = req.body;
+        const { username, avatarUrl, languagePreference, gender } = req.body;
 
         const updatedUser = await prisma.user.update({
             where: { id: req.user.id },
             data: {
                 ...(username && { username }),
                 ...(avatarUrl && { avatarUrl }),
-                ...(languagePreference && { languagePreference })
+                ...(languagePreference && { languagePreference }),
+                ...(gender && { gender })
             },
             select: {
                 id: true,
                 email: true,
                 username: true,
+                gender: true,
                 avatarUrl: true,
                 languagePreference: true,
                 currentStreak: true,

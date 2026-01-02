@@ -7,11 +7,15 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import HomeScreen from '../screens/home/HomeScreen';
 import HifzScreen from '../screens/hifz/HifzScreen';
 import JournalScreen from '../screens/journal/JournalScreen';
+import SisterCirclesScreen from '../screens/journal/SisterCirclesScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import QuranListScreen from '../screens/quran/QuranListScreen';
 import SurahReaderScreen from '../screens/quran/SurahReaderScreen';
+import TajwidScreen from '../screens/tajwid/TajwidScreen';
+import LessonDetailScreen from '../screens/tajwid/LessonDetailScreen';
 import NotificationScreen from '../screens/notifications/NotificationScreen';
 import RecordingScreen from '../screens/hifz/RecordingScreen';
+import CircleDetailsScreen from '../screens/journal/CircleDetailsScreen';
 import { colors, spacing } from '../theme';
 
 const Tab = createBottomTabNavigator();
@@ -22,6 +26,13 @@ const QuranStack = () => (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="QuranList" component={QuranListScreen} />
         <Stack.Screen name="SurahReader" component={SurahReaderScreen} />
+    </Stack.Navigator>
+);
+
+const TajwidStack = () => (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="TajwidList" component={TajwidScreen} />
+        <Stack.Screen name="LessonDetail" component={LessonDetailScreen} />
     </Stack.Navigator>
 );
 
@@ -79,6 +90,24 @@ const TabNavigator = () => {
                 }}
             />
             <Tab.Screen
+                name="Tajwid"
+                component={TajwidStack}
+                options={{
+                    tabBarIcon: ({ focused, size }) => (
+                        <TabIcon focused={focused} iconName="school" size={size} />
+                    ),
+                }}
+            />
+            <Tab.Screen
+                name="Circles"
+                component={SisterCirclesScreen}
+                options={{
+                    tabBarIcon: ({ focused, size }) => (
+                        <TabIcon focused={focused} iconName="people" size={size} />
+                    ),
+                }}
+            />
+            <Tab.Screen
                 name="Journal"
                 component={JournalScreen}
                 options={{
@@ -106,6 +135,7 @@ const MainNavigator = () => {
             <RootStack.Screen name="MainTabs" component={TabNavigator} />
             <RootStack.Screen name="Notifications" component={NotificationScreen} />
             <RootStack.Screen name="Recording" component={RecordingScreen} />
+            <RootStack.Screen name="CircleDetails" component={CircleDetailsScreen} />
         </RootStack.Navigator>
     );
 };
