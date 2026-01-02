@@ -1,12 +1,25 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography, borderRadius } from '../theme';
 import { SURAHS } from '../utils/surahs';
 
 const { width } = Dimensions.get('window');
 
-const QuranMap = ({ progress }) => {
+// Premium Palette for the "Tree"
+const TREE_COLORS = {
+    parchment: '#FDFCF0',
+    deepGreen: '#1B4D3E',
+    gold: '#D4AF37',
+    bronze: '#CD7F32',
+    mastered: '#1B4D3E',
+    reviewing: '#CD7F32',
+    memorizing: '#A5C9CA',
+    unlocked: '#E5E5E5',
+};
+
+const QuranMap = ({ progress, onSurahPress }) => {
     // Memoized stats and maps
     const { masteryMap, stats } = useMemo(() => {
         const map = {};
@@ -21,8 +34,6 @@ const QuranMap = ({ progress }) => {
                 (status === 'reviewing' && map[id] === 'memorizing')) {
                 map[id] = status;
             }
-
-            // Approximate ayah count (assuming they memorized the whole range)
             totalAyahs += Math.abs(p.ayahEnd - p.ayahStart) + 1;
         });
 
@@ -36,8 +47,8 @@ const QuranMap = ({ progress }) => {
         };
     }, [progress]);
 
-    // Grouping surahs by juz for the "Tree/Path" feel
-    const groupedSurahs = useMemo(() => {
+    // Grouping surahs by juz
+    const juzGroups = useMemo(() => {
         const groups = {};
         SURAHS.forEach(s => {
             if (!groups[s.juz]) groups[s.juz] = [];
@@ -46,208 +57,266 @@ const QuranMap = ({ progress }) => {
         return groups;
     }, []);
 
-    const getStatusStyle = (id) => {
+    const getStatusTheme = (id) => {
         const status = masteryMap[id];
-        if (status === 'mastered') return { bg: '#10B981', border: '#059669', text: '#fff' };
-        if (status === 'reviewing') return { bg: '#3B82F6', border: '#2563EB', text: '#fff' };
-        if (status === 'memorizing') return { bg: '#F59E0B', border: '#D97706', text: '#fff' };
-        return { bg: colors.surface, border: 'rgba(255, 255, 255, 0.1)', text: colors.textSecondary };
+        if (status === 'mastered') return { bg: [TREE_COLORS.deepGreen, '#0D2B22'], border: TREE_COLORS.gold, text: '#fff', icon: 'checkmark-circle' };
+        if (status === 'reviewing') return { bg: [TREE_COLORS.bronze, '#8B4513'], border: TREE_COLORS.gold, text: '#fff', icon: 'refresh-circle' };
+        if (status === 'memorizing') return { bg: ['#A5C9CA', '#395B64'], border: 'rgba(0,0,0,0.1)', text: '#fff', icon: 'book' };
+        return { bg: ['#fff', '#f0f0f0'], border: 'rgba(0,0,0,0.05)', text: TREE_COLORS.deepGreen, icon: 'lock-closed' };
+    };
+
+    // Calculate position for the "Winding Path"
+    const getSurahPosition = (index) => {
+        const pattern = [0.5, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6]; // Relative X offsets
+        const offset = pattern[index % pattern.length];
+        return (width - 100) * offset;
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Journey Stats Header */}
-            <LinearGradient
-                colors={['#4F46E5', '#7C3AED']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.statsHeader}
+        <View style={styles.root}>
+            <ScrollView
+                style={styles.container}
+                contentContainerStyle={styles.content}
+                showsVerticalScrollIndicator={false}
             >
-                <View style={styles.statBox}>
-                    <Text style={styles.statNum}>{stats.totalSurahs}</Text>
-                    <Text style={styles.statLab}>Completed</Text>
-                </View>
-                <View style={[styles.statBox, styles.statDivider]}>
-                    <Text style={styles.statNum}>{stats.totalAyahs}</Text>
-                    <Text style={styles.statLab}>Total Ayahs</Text>
-                </View>
-                <View style={styles.statBox}>
-                    <Text style={styles.statNum}>{stats.totalProgress.toFixed(1)}%</Text>
-                    <Text style={styles.statLab}>Journey</Text>
-                </View>
-            </LinearGradient>
-
-            <View style={styles.legend}>
-                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#10B981' }]} /><Text style={styles.legendText}>Mastered</Text></View>
-                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#3B82F6' }]} /><Text style={styles.legendText}>Reviewing</Text></View>
-                <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#F59E0B' }]} /><Text style={styles.legendText}>In Progress</Text></View>
-            </View>
-
-            {/* Path visualization */}
-            <View style={styles.pathContainer}>
-                <View style={styles.verticalPath} />
-                {Object.keys(groupedSurahs).map((juz) => (
-                    <View key={juz} style={styles.juzSection}>
-                        <View style={styles.juzHeader}>
-                            <View style={styles.juzMarker} />
-                            <Text style={styles.juzTitle}>JUZ {juz}</Text>
+                {/* Spiritual Header */}
+                <View style={styles.treeHeader}>
+                    <Text style={styles.treeSub}>Your Spiritual Growth</Text>
+                    <Text style={styles.treeTitle}>The Qur'an Tree</Text>
+                    <View style={styles.divider} />
+                    <View style={styles.statsRow}>
+                        <View style={styles.stat}>
+                            <Text style={styles.statVal}>{stats.totalSurahs}</Text>
+                            <Text style={styles.statLab}>Mastered</Text>
                         </View>
-                        <View style={styles.grid}>
-                            {groupedSurahs[juz].map((surah) => {
-                                const styles_node = getStatusStyle(surah.id);
+                        <View style={styles.stat}>
+                            <Text style={styles.statVal}>{stats.totalAyahs}</Text>
+                            <Text style={styles.statLab}>Ayahs</Text>
+                        </View>
+                        <View style={styles.stat}>
+                            <Text style={styles.statVal}>{stats.totalProgress.toFixed(0)}%</Text>
+                            <Text style={styles.statLab}>Complete</Text>
+                        </View>
+                    </View>
+                </View>
+
+                {/* The Path/Tree */}
+                <View style={styles.treeBody}>
+                    {/* Background "Vine" Path */}
+                    <View style={styles.vinePath} />
+
+                    {Object.keys(juzGroups).map((juz, juzIdx) => (
+                        <View key={juz} style={styles.juzContainer}>
+                            <View style={styles.juzMarker}>
+                                <Text style={styles.juzText}>JUZ {juz}</Text>
+                            </View>
+
+                            {juzGroups[juz].map((surah, sIdx) => {
+                                const theme = getStatusTheme(surah.id);
+                                const leftPos = getSurahPosition(sIdx + (juzIdx * 5));
+
                                 return (
-                                    <TouchableOpacity
-                                        key={surah.id}
-                                        style={[
-                                            styles.surahNode,
-                                            { backgroundColor: styles_node.bg, borderColor: styles_node.border }
-                                        ]}
-                                    >
-                                        <Text style={[styles.surahNumber, { color: styles_node.text }]}>{surah.id}</Text>
-                                        <Text style={styles.nodeName} numberOfLines={1}>{surah.name}</Text>
-                                    </TouchableOpacity>
+                                    <View key={surah.id} style={[styles.nodeWrapper, { marginLeft: leftPos }]}>
+                                        <TouchableOpacity
+                                            activeOpacity={0.8}
+                                            style={[styles.nodeInner, { borderColor: theme.border }]}
+                                            onPress={() => onSurahPress?.(surah)}
+                                        >
+                                            <LinearGradient
+                                                colors={theme.bg}
+                                                style={styles.nodeGradient}
+                                            >
+                                                <Text style={[styles.surahNum, { color: theme.text }]}>{surah.id}</Text>
+                                            </LinearGradient>
+                                        </TouchableOpacity>
+                                        <View style={styles.nodeLabels}>
+                                            <Text style={styles.nodeName}>{surah.name}</Text>
+                                            <Ionicons name={theme.icon} size={10} color={theme.border} />
+                                        </View>
+
+                                        {/* Decorative Branch/Connector */}
+                                        <View style={styles.branchLine} />
+                                    </View>
                                 );
                             })}
                         </View>
-                    </View>
-                ))}
-            </View>
+                    ))}
+                </View>
 
-            <Text style={styles.finishingTouch}>Keep going, sister! Every ayah brings you closer to the Light. 💖</Text>
-        </ScrollView>
+                <View style={styles.footer}>
+                    <Ionicons name="leaf" size={24} color={TREE_COLORS.gold} />
+                    <Text style={styles.footerText}>"Like a good tree, its root is firm and its branch is in the sky."</Text>
+                    <Text style={styles.footerRef}>Surah Ibrahim 14:24</Text>
+                </View>
+            </ScrollView>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
+    root: {
+        flex: 1,
+        backgroundColor: TREE_COLORS.parchment,
+    },
     container: {
         flex: 1,
-        backgroundColor: colors.background,
     },
     content: {
-        padding: spacing.md,
         paddingBottom: spacing.xxl,
     },
-    statsHeader: {
-        flexDirection: 'row',
-        padding: spacing.lg,
-        borderRadius: borderRadius.lg,
-        marginBottom: spacing.lg,
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-    },
-    statBox: {
-        flex: 1,
+    treeHeader: {
+        paddingVertical: spacing.xl,
         alignItems: 'center',
+        backgroundColor: TREE_COLORS.deepGreen,
+        borderBottomLeftRadius: 40,
+        borderBottomRightRadius: 40,
     },
-    statDivider: {
-        borderLeftWidth: 1,
-        borderRightWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.2)',
-    },
-    statNum: {
-        fontSize: typography.fontSize.lg,
-        fontWeight: 'bold',
-        color: '#fff',
-    },
-    statLab: {
-        fontSize: 10,
-        color: 'rgba(255, 255, 255, 0.8)',
-        marginTop: 2,
+    treeSub: {
+        color: TREE_COLORS.gold,
+        fontSize: 12,
+        letterSpacing: 2,
         textTransform: 'uppercase',
+        fontWeight: 'bold',
+        opacity: 0.9,
     },
-    legend: {
+    treeTitle: {
+        color: '#fff',
+        fontSize: 32,
+        fontWeight: 'bold',
+        marginTop: 4,
+        fontFamily: Platform.OS === 'ios' ? 'Georgia' : 'serif',
+    },
+    divider: {
+        width: 40,
+        height: 2,
+        backgroundColor: TREE_COLORS.gold,
+        marginVertical: spacing.md,
+    },
+    statsRow: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginBottom: spacing.xl,
-        backgroundColor: colors.surface,
-        padding: spacing.sm,
-        borderRadius: borderRadius.md,
+        width: '100%',
+        paddingHorizontal: spacing.xl,
     },
-    legendItem: {
-        flexDirection: 'row',
+    stat: {
         alignItems: 'center',
     },
-    dot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        marginRight: 6,
+    statVal: {
+        color: '#fff',
+        fontSize: 18,
+        fontWeight: 'bold',
     },
-    legendText: {
+    statLab: {
+        color: 'rgba(255,255,255,0.6)',
         fontSize: 10,
-        color: colors.textSecondary,
+        textTransform: 'uppercase',
+        marginTop: 2,
     },
-    juzSection: {
-        marginBottom: spacing.xl,
-        paddingLeft: spacing.xl,
-    },
-    pathContainer: {
+    treeBody: {
+        paddingTop: spacing.xxl,
         position: 'relative',
+        minHeight: 1000,
     },
-    verticalPath: {
+    vinePath: {
         position: 'absolute',
+        left: width / 2 - 1,
         top: 0,
         bottom: 0,
-        left: 5,
         width: 2,
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        backgroundColor: 'rgba(27, 77, 62, 0.05)',
+        borderStyle: 'dashed',
+        borderRadius: 1,
     },
-    juzHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-        marginLeft: -spacing.xl - 2,
+    juzContainer: {
+        marginBottom: spacing.xxl,
     },
     juzMarker: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: colors.primary,
-        borderWidth: 2,
-        borderColor: colors.background,
-        marginRight: spacing.md,
+        backgroundColor: TREE_COLORS.gold,
+        paddingHorizontal: spacing.md,
+        paddingVertical: 4,
+        borderRadius: borderRadius.full,
+        alignSelf: 'center',
+        marginBottom: spacing.xl,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
     },
-    juzTitle: {
+    juzText: {
+        color: TREE_COLORS.deepGreen,
         fontSize: 12,
         fontWeight: 'bold',
-        color: colors.textMuted,
-        letterSpacing: 2,
+        letterSpacing: 1,
     },
-    grid: {
+    nodeWrapper: {
+        marginBottom: spacing.xl,
+        alignItems: 'center',
         flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'flex-start',
+        zIndex: 2,
     },
-    surahNode: {
-        width: (width - spacing.md * 4 - spacing.xl) / 3 - spacing.sm,
+    nodeInner: {
+        width: 60,
         height: 60,
-        borderRadius: borderRadius.md,
-        margin: 5,
+        borderRadius: 30,
+        borderWidth: 2,
+        padding: 2,
+        backgroundColor: '#fff',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+    },
+    nodeGradient: {
+        flex: 1,
+        borderRadius: 28,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 1,
     },
-    surahNumber: {
-        fontSize: 14,
+    surahNum: {
+        fontSize: 18,
         fontWeight: 'bold',
     },
-    nodeName: {
-        fontSize: 8,
-        color: 'rgba(255, 255, 255, 0.7)',
-        marginTop: 4,
-        textAlign: 'center',
-        paddingHorizontal: 2,
+    nodeLabels: {
+        marginLeft: spacing.sm,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        paddingHorizontal: spacing.md,
+        paddingVertical: 4,
+        borderRadius: borderRadius.md,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
     },
-    finishingTouch: {
-        textAlign: 'center',
-        marginTop: spacing.xxl,
-        color: colors.textSecondary,
-        fontSize: typography.fontSize.sm,
-        fontStyle: 'italic',
+    nodeName: {
+        fontSize: 12,
+        fontWeight: 'bold',
+        color: TREE_COLORS.deepGreen,
+    },
+    branchLine: {
+        position: 'absolute',
+        top: 30,
+        left: -40,
+        width: 40,
+        height: 2,
+        backgroundColor: 'rgba(27, 77, 62, 0.1)',
+        zIndex: -1,
+    },
+    footer: {
+        padding: spacing.xxl,
+        alignItems: 'center',
         opacity: 0.8,
+    },
+    footerText: {
+        textAlign: 'center',
+        color: TREE_COLORS.deepGreen,
+        fontStyle: 'italic',
+        marginTop: spacing.md,
+        fontSize: 14,
+        lineHeight: 22,
+    },
+    footerRef: {
+        color: TREE_COLORS.gold,
+        fontSize: 12,
+        marginTop: spacing.sm,
+        fontWeight: 'bold',
     }
 });
 
