@@ -45,7 +45,14 @@ model HifzProgress {
   ayahEnd        Int
   status         String    @default("memorizing") // memorizing, reviewing, mastered
   memorizedDate  DateTime?
-  reviewCount    Int       @default(0)
+  reviewCount    Int       @default(0) // Total reviews done
+  lastReviewed   DateTime? // Must enable tracking last review date clearly
+  
+  // SRS Specific Fields
+  easinessFactor Float     @default(2.5) // SM-2 EF, starts at 2.5
+  interval       Int       @default(0)   // Days until next review
+  repetitions    Int       @default(0)   // Consecutive successful reviews streak
+
   nextReviewDate DateTime?
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt

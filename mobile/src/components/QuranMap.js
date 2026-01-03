@@ -58,10 +58,26 @@ const QuranMap = ({ progress, onSurahPress }) => {
     }, []);
 
     const getStatusTheme = (id) => {
-        const status = masteryMap[id];
-        if (status === 'mastered') return { bg: [TREE_COLORS.deepGreen, '#0D2B22'], border: TREE_COLORS.gold, text: '#fff', icon: 'checkmark-circle' };
-        if (status === 'reviewing') return { bg: [TREE_COLORS.bronze, '#8B4513'], border: TREE_COLORS.gold, text: '#fff', icon: 'refresh-circle' };
-        if (status === 'memorizing') return { bg: ['#A5C9CA', '#395B64'], border: 'rgba(0,0,0,0.1)', text: '#fff', icon: 'book' };
+        const item = progress.find(p => p.surahId === id);
+        const status = item ? item.status : null;
+        const ef = item ? (item.easinessFactor || 2.5) : 2.5;
+
+        // Custom function to get color based on EF (Heatmap Logic)
+        const getHeatmapColor = (factor) => {
+            if (factor < 1.7) return ['#EF4444', '#7F1D1D']; // Red (Weak)
+            if (factor < 2.3) return ['#F59E0B', '#92400E']; // Orange (Moderate)
+            if (factor < 2.8) return ['#10B981', '#064E3B']; // Green (Good)
+            return ['#059669', '#064E3B']; // Dark Green (Strong)
+        };
+
+        if (status === 'mastered') return { bg: ['#1B4D3E', '#0D2B22'], border: TREE_COLORS.gold, text: '#fff', icon: 'checkmark-circle' };
+
+        if (status === 'reviewing' || status === 'memorizing') {
+            // Use Heatmap for active items
+            const bg = getHeatmapColor(ef);
+            return { bg, border: 'rgba(255,255,255,0.2)', text: '#fff', icon: 'pulse' };
+        }
+
         return { bg: ['#fff', '#f0f0f0'], border: 'rgba(0,0,0,0.05)', text: TREE_COLORS.deepGreen, icon: 'lock-closed' };
     };
 
@@ -144,12 +160,20 @@ const QuranMap = ({ progress, onSurahPress }) => {
                 </View>
 
                 <View style={styles.footer}>
+                    <View style={styles.legendContainer}>
+                        <Text style={styles.legendTitle}>Retention Strength Heatmap</Text>
+                        <View style={styles.legendRow}>
+                            <View style={[styles.legendDot, { backgroundColor: '#EF4444' }]} /><Text style={styles.legendText}>Weak</Text>
+                            <View style={[styles.legendDot, { backgroundColor: '#F59E0B' }]} /><Text style={styles.legendText}>Okay</Text>
+                            <View style={[styles.legendDot, { backgroundColor: '#10B981' }]} /><Text style={styles.legendText}>Strong</Text>
+                        </View>
+                    </View>
                     <Ionicons name="leaf" size={24} color={TREE_COLORS.gold} />
                     <Text style={styles.footerText}>"Like a good tree, its root is firm and its branch is in the sky."</Text>
                     <Text style={styles.footerRef}>Surah Ibrahim 14:24</Text>
                 </View>
-            </ScrollView>
-        </View>
+            </ScrollView >
+        </View >
     );
 };
 
@@ -317,6 +341,34 @@ const styles = StyleSheet.create({
         fontSize: 12,
         marginTop: spacing.sm,
         fontWeight: 'bold',
+    },
+    legendContainer: {
+        marginBottom: spacing.xl,
+        alignItems: 'center',
+        backgroundColor: 'rgba(255,255,255,0.5)',
+        padding: spacing.md,
+        borderRadius: borderRadius.md,
+    },
+    legendTitle: {
+        fontSize: 10,
+        fontWeight: 'bold',
+        color: TREE_COLORS.deepGreen,
+        marginBottom: 8,
+        textTransform: 'uppercase',
+    },
+    legendRow: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    legendDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        marginRight: 4,
+    },
+    legendText: {
+        fontSize: 10,
+        color: colors.textSecondary,
     }
 });
 

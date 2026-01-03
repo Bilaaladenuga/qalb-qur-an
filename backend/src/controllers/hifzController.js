@@ -307,52 +307,75 @@ const updateStreak = async (userId) => {
 const markAsReviewed = async (req, res) => {
     try {
         const { id } = req.params;
-        const { quality } = req.body; // 1: Hard, 2: Good, 3: Perfect
+        const { quality } = req.body; // 0-3 scale from UI (Converted to 0-5 scale for SM-2)
 
         const existing = await prisma.hifzProgress.findFirst({
             where: { id, userId: req.user.id }
         });
 
         if (!existing) {
-            return res.status(404).json({
-                success: false,
-                message: 'Progress not found.'
-            });
+            return res.status(404).json({ success: false, message: 'Progress not found.' });
         }
 
-        let newReviewCount = existing.reviewCount + 1;
-        let daysToAdd = 1;
+        // --- SM-2 ALGORITHM IMPLEMENTATION ---
 
-        // Simplified SRA logic
-        if (quality === 3) { // Perfect
-            daysToAdd = Math.pow(2, newReviewCount); // 1, 2, 4, 8, 16...
-        } else if (quality === 2) { // Good
-            daysToAdd = Math.pow(1.5, newReviewCount); // 1, 1.5, 2.25...
-        } else { // Hard (quality 1)
-            daysToAdd = 1; // Stay on 1 day
+        // 1. Map UI Quality (1-3) to SM-2 Quality (0-5)
+        // UI: 1=Hard, 2=Good, 3=Perfect
+        // SM-2: 0-2=Fail, 3=Pass(Hard), 4=Pass(Good), 5=Pass(Easy)
+        let q = 0;
+        if (quality === 1) q = 3;      // Hard (but passed)
+        else if (quality === 2) q = 4; // Good
+        else if (quality === 3) q = 5; // Perfect
+        else q = 0; // Failed/Forgot (if implemented in future)
+
+        // 2. Retrieve current state
+        let { easinessFactor, interval, repetitions } = existing;
+
+        // 3. Calculate new Interval (I) and Repetitions (n)
+        if (q >= 3) {
+            // Success
+            if (repetitions === 0) {
+                interval = 1;
+            } else if (repetitions === 1) {
+                interval = 6;
+            } else {
+                interval = Math.round(interval * easinessFactor);
+            }
+            repetitions += 1;
+        } else {
+            // Failed
+            repetitions = 0;
+            interval = 1;
         }
 
-        // Cap review interval at 90 days
-        daysToAdd = Math.min(Math.round(daysToAdd), 90);
+        // 4. Update Easiness Factor (EF)
+        // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+        // EF should not drop below 1.3
+        easinessFactor = easinessFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+        if (easinessFactor < 1.3) easinessFactor = 1.3;
 
+        // 5. Calculate Next Review Date
         const nextReviewDate = new Date();
-        nextReviewDate.setDate(nextReviewDate.getDate() + daysToAdd);
+        nextReviewDate.setDate(nextReviewDate.getDate() + interval);
 
-        // Update status if reviewed many times
+        // 6. Update Status
         let newStatus = existing.status;
-        if (newReviewCount > 10 && quality >= 2) {
-            newStatus = 'mastered';
+        if (repetitions >= 5 && existing.status === 'memorizing') {
+            newStatus = 'mastered'; // Auto-graduate after 5 successful strict spaced reps
         } else if (existing.status === 'memorizing') {
-            newStatus = 'reviewing';
+            newStatus = 'reviewing'; // Moved from initial learning to reviewing
         }
 
         const updatedProgress = await prisma.hifzProgress.update({
             where: { id },
             data: {
-                reviewCount: newReviewCount,
+                reviewCount: existing.reviewCount + 1,
+                lastReviewed: new Date(),
                 nextReviewDate,
-                status: newStatus,
-                lastReviewed: new Date()
+                easinessFactor,
+                interval,
+                repetitions,
+                status: newStatus
             }
         });
 
@@ -361,7 +384,7 @@ const markAsReviewed = async (req, res) => {
 
         res.json({
             success: true,
-            message: `Review recorded! Next review in ${daysToAdd} days.`,
+            message: `Review recorded! Next review in ${interval} days.`,
             data: updatedProgress
         });
     } catch (error) {

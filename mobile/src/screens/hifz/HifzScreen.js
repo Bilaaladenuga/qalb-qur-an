@@ -71,24 +71,34 @@ const HifzScreen = () => {
         loadData();
     }, [dispatch]);
 
-    const handleAddProgress = () => {
+    const handleAddProgress = async () => {
         if (!selectedSurah || !ayahStart || !ayahEnd) {
             Alert.alert('Missing Fields', 'Please fill in all fields');
             return;
         }
 
-        dispatch(addProgress({
-            surahId: selectedSurah.id,
-            surahName: selectedSurah.name,
-            ayahStart: parseInt(ayahStart),
-            ayahEnd: parseInt(ayahEnd),
-            status: 'memorizing',
-        }));
+        try {
+            await dispatch(addProgress({
+                surahId: selectedSurah.id,
+                surahName: selectedSurah.name,
+                ayahStart: parseInt(ayahStart),
+                ayahEnd: parseInt(ayahEnd),
+                status: 'memorizing',
+            })).unwrap(); // Unwrap to catch errors from createAsyncThunk
 
-        setShowAddModal(false);
-        setSelectedSurah(null);
-        setAyahStart('');
-        setAyahEnd('');
+            // Refresh goals to show immediate progress
+            dispatch(fetchGoals());
+
+            // Only close and clear if successful
+            setShowAddModal(false);
+            setSelectedSurah(null);
+            setAyahStart('');
+            setAyahEnd('');
+            Alert.alert('Success', `Added ${selectedSurah.name} to your Tracker! 🌱`);
+        } catch (err) {
+            console.error('Failed to add progress:', err);
+            Alert.alert('Error', typeof err === 'string' ? err : 'Failed to add progress. Please try again.');
+        }
     };
 
     const handleCreateGoal = () => {
@@ -640,127 +650,146 @@ const HifzScreen = () => {
             >
                 <View style={styles.reviewModalContent}>
                     {currentReviewItem && (
-                        <View style={styles.reviewCard}>
-                            <Text style={styles.reviewSurahName}>
-                                {currentReviewItem.surahName}
-                            </Text>
-                            <Text style={styles.reviewAyahRange}>
-                                Ayah {currentReviewItem.ayahStart} - {currentReviewItem.ayahEnd}
-                            </Text>
+                        <ScrollView
+                            contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}
+                            showsVerticalScrollIndicator={false}
+                            style={{ width: '100%' }}
+                        >
+                            <View style={styles.reviewCard}>
+                                <Text style={styles.reviewSurahName}>
+                                    {currentReviewItem.surahName}
+                                </Text>
+                                <Text style={styles.reviewAyahRange}>
+                                    Ayah {currentReviewItem.ayahStart} - {currentReviewItem.ayahEnd}
+                                </Text>
 
-                            <View style={{ height: 2, width: 50, backgroundColor: colors.primary, marginTop: spacing.md }} />
+                                <View style={{ height: 2, width: 50, backgroundColor: colors.primary, marginTop: spacing.md }} />
 
-                            {/* Recording Controls */}
-                            {!isFlipped && (
-                                <View style={styles.recordingSection}>
-                                    {recordingUri ? (
-                                        <View style={styles.playbackContainer}>
-                                            <TouchableOpacity style={styles.playButton} onPress={playRecording}>
-                                                <Ionicons name="play-circle" size={48} color={colors.primary} />
-                                                <Text style={styles.playText}>Listen to your Hifz</Text>
+                                {/* Recording Controls */}
+                                {!isFlipped && (
+                                    <View style={styles.recordingSection}>
+                                        {recordingUri ? (
+                                            <View style={styles.playbackContainer}>
+                                                <TouchableOpacity style={styles.playButton} onPress={playRecording}>
+                                                    <Ionicons name="play-circle" size={48} color={colors.primary} />
+                                                    <Text style={styles.playText}>Listen to your Hifz</Text>
+                                                </TouchableOpacity>
+                                                <TouchableOpacity onPress={() => setRecordingUri(null)}>
+                                                    <Text style={styles.retryText}>Retry</Text>
+                                                </TouchableOpacity>
+                                            </View>
+                                        ) : (
+                                            <TouchableOpacity
+                                                style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
+                                                onPress={isRecording ? stopRecording : startRecording}
+                                            >
+                                                <Ionicons
+                                                    name={isRecording ? "stop" : "mic"}
+                                                    size={32}
+                                                    color="#fff"
+                                                />
+                                                <Text style={styles.recordBtnText}>
+                                                    {isRecording ? "Stop & Check" : "Tap to Recite"}
+                                                </Text>
                                             </TouchableOpacity>
-                                            <TouchableOpacity onPress={() => setRecordingUri(null)}>
-                                                <Text style={styles.retryText}>Retry</Text>
+                                        )}
+                                    </View>
+                                )}
+
+                                {/* Verification Reveal */}
+                                <TouchableOpacity
+                                    activeOpacity={0.7}
+                                    style={[styles.revealButton, isFlipped && { backgroundColor: colors.surfaceLight, borderWidth: 1, borderColor: colors.primary }]}
+                                    onPress={() => setIsFlipped(!isFlipped)}
+                                >
+                                    <Ionicons name={isFlipped ? "eye-off" : "eye"} size={24} color={isFlipped ? colors.primary : '#fff'} />
+                                    <Text style={[styles.revealText, isFlipped && { color: colors.primary }]}>
+                                        {isFlipped ? 'Hide Verse Text' : 'Reveal Verse Text'}
+                                    </Text>
+                                </TouchableOpacity>
+
+                                {isFlipped && (
+                                    <>
+                                        <View style={styles.verseScrollContainer}>
+                                            <ScrollView
+                                                nestedScrollEnabled={true}
+                                                showsVerticalScrollIndicator={true}
+                                                contentContainerStyle={styles.verseScrollContent}
+                                            >
+                                                {isVersesLoading ? (
+                                                    <ActivityIndicator size="small" color={colors.primary} />
+                                                ) : (
+                                                    versesData.map((verse, index) => (
+                                                        <View key={index} style={styles.verseItem}>
+                                                            <Text style={styles.arabicReviewText}>
+                                                                {verse.text_uthmani}
+                                                            </Text>
+                                                            <View style={styles.verseNumberBadgeSm}>
+                                                                <Text style={styles.verseNumberTextSm}>{verse.verse_number}</Text>
+                                                            </View>
+                                                        </View>
+                                                    ))
+                                                )}
+                                            </ScrollView>
+                                        </View>
+
+                                        <TouchableOpacity
+                                            style={styles.masteredButton}
+                                            onPress={handleMarkAsMemorized}
+                                        >
+                                            <Ionicons name="trophy" size={20} color="#fff" />
+                                            <Text style={styles.masteredButtonText}>Mark as Mastered</Text>
+                                        </TouchableOpacity>
+
+                                        <Text style={{ marginTop: spacing.md, color: colors.textSecondary, marginBottom: spacing.sm, textAlign: 'center', fontWeight: 'bold' }}>
+                                            Rate your Recitation:
+                                        </Text>
+
+                                        <View style={styles.reviewActions}>
+                                            <TouchableOpacity
+                                                activeOpacity={0.7}
+                                                style={[styles.reviewBtn, styles.reviewBtnHard]}
+                                                onPress={() => handleReviewSubmit(1)}
+                                            >
+                                                <Text style={styles.reviewEmoji}>😰</Text>
+                                                <Text style={[styles.reviewBtnText, { color: colors.error }]}>Hard</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                activeOpacity={0.7}
+                                                style={[styles.reviewBtn, styles.reviewBtnGood]}
+                                                onPress={() => handleReviewSubmit(2)}
+                                            >
+                                                <Text style={styles.reviewEmoji}>🙂</Text>
+                                                <Text style={[styles.reviewBtnText, { color: colors.warning }]}>Good</Text>
+                                            </TouchableOpacity>
+                                            <TouchableOpacity
+                                                activeOpacity={0.7}
+                                                style={[styles.reviewBtn, styles.reviewBtnPerfect]}
+                                                onPress={() => handleReviewSubmit(3)}
+                                            >
+                                                <Text style={styles.reviewEmoji}>🤩</Text>
+                                                <Text style={[styles.reviewBtnText, { color: colors.success }]}>Perfect</Text>
                                             </TouchableOpacity>
                                         </View>
-                                    ) : (
+
+                                        {/* "Hide" button at bottom for convenience */}
                                         <TouchableOpacity
-                                            style={[styles.recordBtn, isRecording && styles.recordBtnActive]}
-                                            onPress={isRecording ? stopRecording : startRecording}
+                                            style={{ marginTop: spacing.lg, padding: 10 }}
+                                            onPress={() => setIsFlipped(false)}
                                         >
-                                            <Ionicons
-                                                name={isRecording ? "stop" : "mic"}
-                                                size={32}
-                                                color="#fff"
-                                            />
-                                            <Text style={styles.recordBtnText}>
-                                                {isRecording ? "Stop & Check" : "Tap to Recite"}
-                                            </Text>
+                                            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>^ Hide Text</Text>
                                         </TouchableOpacity>
-                                    )}
-                                </View>
-                            )}
+                                    </>
+                                )}
 
-                            {/* Verification Reveal */}
-                            <TouchableOpacity
-                                style={styles.revealButton}
-                                onPress={() => setIsFlipped(!isFlipped)}
-                            >
-                                <Ionicons name={isFlipped ? "eye-off-outline" : "eye-outline"} size={20} color={colors.primary} />
-                                <Text style={styles.revealText}>
-                                    {isFlipped ? 'Hide Verse' : 'Reveal Verse'}
-                                </Text>
-                            </TouchableOpacity>
-
-                            {isFlipped && (
-                                <>
-                                    <View style={styles.verseScrollContainer}>
-                                        <ScrollView
-                                            showsVerticalScrollIndicator={false}
-                                            contentContainerStyle={styles.verseScrollContent}
-                                        >
-                                            {isVersesLoading ? (
-                                                <ActivityIndicator size="small" color={colors.primary} />
-                                            ) : (
-                                                versesData.map((verse, index) => (
-                                                    <View key={index} style={styles.verseItem}>
-                                                        <Text style={styles.arabicReviewText}>
-                                                            {verse.text_uthmani}
-                                                        </Text>
-                                                        <View style={styles.verseNumberBadgeSm}>
-                                                            <Text style={styles.verseNumberTextSm}>{verse.verse_number}</Text>
-                                                        </View>
-                                                    </View>
-                                                ))
-                                            )}
-                                        </ScrollView>
-                                    </View>
-
-                                    <TouchableOpacity
-                                        style={styles.masteredButton}
-                                        onPress={handleMarkAsMemorized}
-                                    >
-                                        <Ionicons name="trophy-outline" size={18} color={colors.accent} />
-                                        <Text style={styles.masteredButtonText}>Mark as Fully Memorized</Text>
-                                    </TouchableOpacity>
-
-                                    <Text style={{ marginTop: spacing.lg, color: colors.textSecondary, marginBottom: spacing.sm, textAlign: 'center' }}>
-                                        How was your recitation?
-                                    </Text>
-
-                                    <View style={styles.reviewActions}>
-                                        <TouchableOpacity
-                                            style={[styles.reviewBtn, styles.reviewBtnHard]}
-                                            onPress={() => handleReviewSubmit(1)}
-                                        >
-                                            <Text style={styles.reviewEmoji}>😰</Text>
-                                            <Text style={[styles.reviewBtnText, { color: colors.error }]}>Hard</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.reviewBtn, styles.reviewBtnGood]}
-                                            onPress={() => handleReviewSubmit(2)}
-                                        >
-                                            <Text style={styles.reviewEmoji}>🙂</Text>
-                                            <Text style={[styles.reviewBtnText, { color: colors.warning }]}>Good</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity
-                                            style={[styles.reviewBtn, styles.reviewBtnPerfect]}
-                                            onPress={() => handleReviewSubmit(3)}
-                                        >
-                                            <Text style={styles.reviewEmoji}>🤩</Text>
-                                            <Text style={[styles.reviewBtnText, { color: colors.success }]}>Perfect</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </>
-                            )}
-
-                            <Button
-                                title="Exit Session"
-                                variant="ghost"
-                                onPress={() => setShowReviewModal(false)}
-                                style={{ marginTop: spacing.xl }}
-                            />
-                        </View>
+                                <Button
+                                    title="Exit Session"
+                                    variant="ghost"
+                                    onPress={() => setShowReviewModal(false)}
+                                    style={{ marginTop: spacing.xl, width: '100%' }}
+                                />
+                            </View>
+                        </ScrollView>
                     )}
                 </View>
             </Modal>

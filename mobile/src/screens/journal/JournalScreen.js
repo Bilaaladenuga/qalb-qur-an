@@ -21,13 +21,18 @@ import {
     fetchPrompts,
     fetchDailyAyah
 } from '../../store/slices/journalSlice';
+import { getDailyAyah, getDailyPrompt } from '../../utils/dailyContent';
 import { Card, Button, Input } from '../../components';
 import { journalAPI } from '../../services/api';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 
 const JournalScreen = () => {
     const dispatch = useDispatch();
-    const { entries, prompts, dailyAyah, isLoading } = useSelector((state) => state.journal);
+    const { entries, prompts, isLoading } = useSelector((state) => state.journal);
+
+    // Use the daily content utility directly
+    const dailyAyah = getDailyAyah();
+    const dailyPrompt = getDailyPrompt();
 
     const [showAddModal, setShowAddModal] = useState(false);
     const [reflectionText, setReflectionText] = useState('');

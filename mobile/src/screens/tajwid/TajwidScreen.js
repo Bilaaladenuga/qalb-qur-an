@@ -4,6 +4,7 @@ import {
     Text,
     StyleSheet,
     FlatList,
+    SectionList,
     TouchableOpacity,
     ActivityIndicator,
     SafeAreaView,
@@ -48,30 +49,48 @@ const TajwidScreen = ({ navigation }) => {
         return (completedCount / lessons.length) * 100;
     };
 
-    const renderLessonItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.lessonCard}
-            onPress={() => navigation.navigate('LessonDetail', { lesson: item })}
-        >
-            <View style={styles.lessonInfo}>
-                <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryText}>{item.category}</Text>
-                </View>
-                <Text style={styles.lessonTitle}>{item.title}</Text>
-                <Text style={styles.lessonDescription} numberOfLines={2}>
-                    {item.description}
-                </Text>
-            </View>
-            <View style={styles.statusContainer}>
-                {item.completed ? (
-                    <Ionicons name="checkmark-circle" size={28} color={colors.success} />
-                ) : (
-                    <Ionicons name="ellipse-outline" size={28} color={colors.textMuted} />
-                )}
-                <Ionicons name="chevron-forward" size={20} color={colors.textMuted} style={{ marginLeft: spacing.xs }} />
-            </View>
-        </TouchableOpacity>
+    const groupedLessons = [
+        { title: 'Level 1: Foundations (Makharij & Sifat)', data: lessons.filter(l => l.level === 'Al-Jazariyyah 1') },
+        { title: 'Level 2: Rules (Tarqiq, Idgham)', data: lessons.filter(l => l.level === 'Al-Jazariyyah 2') },
+        { title: 'Level 3: Advanced (Madd, Waqf)', data: lessons.filter(l => l.level === 'Al-Jazariyyah 3') },
+    ].filter(section => section.data.length > 0);
+
+    const renderSectionHeader = ({ section: { title } }) => (
+        <View style={styles.sectionHeaderContainer}>
+            <Text style={styles.sectionHeaderText}>{title}</Text>
+        </View>
     );
+
+    const renderLessonItem = ({ item, index, section }) => {
+        // Simple visual connector line logic could go here if needed
+        return (
+            <TouchableOpacity
+                style={styles.lessonCard}
+                onPress={() => navigation.navigate('LessonDetail', { lesson: item })}
+            >
+                <View style={[styles.lessonNumberBadge, { backgroundColor: item.completed ? colors.success : colors.primaryLight }]}>
+                    <Text style={styles.lessonNumberText}>{index + 1}</Text>
+                </View>
+
+                <View style={styles.lessonInfo}>
+                    <Text style={styles.lessonTitle}>{item.title}</Text>
+                    <Text style={styles.lessonDescription} numberOfLines={1}>
+                        {item.description}
+                    </Text>
+                </View>
+
+                <View style={styles.statusContainer}>
+                    {item.completed ? (
+                        <Ionicons name="checkmark-circle" size={24} color={colors.success} />
+                    ) : (
+                        <View style={styles.playIconContainer}>
+                            <Ionicons name="play" size={12} color={colors.primary} />
+                        </View>
+                    )}
+                </View>
+            </TouchableOpacity>
+        );
+    };
 
     if (loading) {
         return (
@@ -105,17 +124,16 @@ const TajwidScreen = ({ navigation }) => {
                 </LinearGradient>
             </View>
 
-            <FlatList
-                data={lessons}
-                renderItem={renderLessonItem}
+            <SectionList
+                sections={groupedLessons}
                 keyExtractor={(item) => item.id}
+                renderItem={renderLessonItem}
+                renderSectionHeader={renderSectionHeader}
                 contentContainerStyle={styles.listContainer}
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 showsVerticalScrollIndicator={false}
-                ListHeaderComponent={() => (
-                    <Text style={styles.sectionTitle}>Curriculum</Text>
-                )}
+                stickySectionHeadersEnabled={false}
             />
         </SafeAreaView>
     );
@@ -196,38 +214,57 @@ const styles = StyleSheet.create({
         marginBottom: spacing.md,
         alignItems: 'center',
         ...shadows.sm,
+        borderWidth: 1,
+        borderColor: colors.border,
+    },
+    lessonNumberBadge: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: spacing.md,
+    },
+    lessonNumberText: {
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 12,
     },
     lessonInfo: {
         flex: 1,
-    },
-    categoryBadge: {
-        backgroundColor: colors.surfaceLight,
-        paddingHorizontal: spacing.sm,
-        paddingVertical: 2,
-        borderRadius: 4,
-        alignSelf: 'flex-start',
-        marginBottom: spacing.xs,
-    },
-    categoryText: {
-        color: colors.textSecondary,
-        fontSize: 10,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
     },
     lessonTitle: {
         fontSize: typography.fontSize.md,
         color: colors.text,
         fontWeight: 'bold',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     lessonDescription: {
-        fontSize: typography.fontSize.sm,
+        fontSize: 12,
         color: colors.textSecondary,
     },
     statusContainer: {
-        flexDirection: 'row',
+        marginLeft: spacing.md,
+    },
+    playIconContainer: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
+        backgroundColor: colors.primary + '20',
         alignItems: 'center',
-        paddingLeft: spacing.md,
+        justifyContent: 'center',
+    },
+    sectionHeaderContainer: {
+        backgroundColor: colors.background,
+        paddingVertical: spacing.sm,
+        marginTop: spacing.sm,
+        marginBottom: spacing.xs,
+    },
+    sectionHeaderText: {
+        fontSize: typography.fontSize.lg,
+        fontWeight: 'bold',
+        color: colors.primary,
+        letterSpacing: 0.5,
     },
 });
 

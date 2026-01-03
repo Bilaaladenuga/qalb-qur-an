@@ -68,9 +68,26 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`\n🌙 Qalb & Quran API is running on port ${PORT}`);
   console.log(`📖 Visit http://localhost:${PORT} to get started\n`);
+
+  // DEBUG: Force Keep-Alive
+  setInterval(() => {
+    // console.log('Heartbeat...');
+  }, 10000);
+});
+
+server.on('error', (e) => {
+  console.error('SERVER ERROR:', e);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('UNHANDLED REJECTION:', reason);
 });
 
 module.exports = app;

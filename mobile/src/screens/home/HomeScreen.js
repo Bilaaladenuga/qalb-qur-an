@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchProgress, fetchGoals, fetchReviewQueue } from '../../store/slices/hifzSlice';
 import { fetchNotifications } from '../../store/slices/notificationSlice';
+import { getDailyAyah } from '../../utils/dailyContent';
 import { Card } from '../../components';
 import { colors, spacing, typography, borderRadius } from '../../theme';
 
@@ -36,24 +37,12 @@ const HomeScreen = ({ navigation }) => {
     // Get greeting based on time
     const getGreeting = () => {
         const hour = new Date().getHours();
-        if (hour < 12) return 'Good Morning';
-        if (hour < 17) return 'Good Afternoon';
-        return 'Good Evening';
+        if (hour < 12) return 'Good Morning ☀️';
+        if (hour < 17) return 'Good Afternoon 🌤️';
+        return 'Good Evening 🌙';
     };
 
-    // Get a motivational Islamic quote
-    const getDailyQuote = () => {
-        const quotes = [
-            { text: "Indeed, with hardship comes ease.", reference: "Quran 94:6" },
-            { text: "So remember Me; I will remember you.", reference: "Quran 2:152" },
-            { text: "And He found you lost and guided you.", reference: "Quran 93:7" },
-            { text: "My mercy encompasses all things.", reference: "Quran 7:156" },
-        ];
-        const today = new Date().getDate();
-        return quotes[today % quotes.length];
-    };
-
-    const quote = getDailyQuote();
+    const quote = getDailyAyah();
     const activeGoals = goals.filter(g => !g.isCompleted).slice(0, 3);
 
     return (
@@ -72,7 +61,7 @@ const HomeScreen = ({ navigation }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <View>
-                        <Text style={styles.greeting}>{getGreeting()} 🌙</Text>
+                        <Text style={styles.greeting}>{getGreeting()}</Text>
                         <Text style={styles.username}>{user?.username || 'Sister'}</Text>
                     </View>
                     <View style={styles.headerRight}>

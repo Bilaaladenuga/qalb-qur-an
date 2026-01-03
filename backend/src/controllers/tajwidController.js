@@ -2,62 +2,238 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 const lessons = [
+    // ============================================================
+    // LEVEL 1: FOUNDATIONS (AL-JAZARIYYAH)
+    // ============================================================
     {
-        id: 'intro-1',
-        title: 'Definition & Importance',
-        category: 'Introduction',
-        description: 'What is Tajwid and why is it important?',
-        content: '# Introduction to Tajwid\n\n**Definition:** The word "Tajwid" literally means "proficiency" or "doing something well". In the context of the Quran, it refers to the set of rules for the correct pronunciation of the letters with all their qualities and attributes.\n\n**Importance:**\n1. Preserving the Quran from errors during recitation.\n2. Fulfilling the religious obligation of reciting the Quran as it was revealed.\n3. Understanding the meaning correctly, as wrong pronunciation can change meanings.\n4. Experiencing the spiritual beauty of Quranic recitation.',
-    },
-    {
-        id: 'foundations-1',
-        title: 'Alphabet & Makharij',
+        id: 'L1-01',
+        title: 'Al-Muqaddimah (Introduction)',
         category: 'Foundations',
-        description: 'Points of articulation for Arabic letters.',
-        content: '# Makharij al-Huroof\n\nThere are 17 main articulation points (Makharij) in the human speech system used for the 28 Arabic letters.\n\n### Main Areas:\n1. **The Throat (Al-Halq):** Letters like Hamza, Haa, Kha.\n2. **The Tongue (Al-Lisan):** Majority of letters (Qaaf, Kaaf, Jeem, etc.).\n3. **The Lips (Ash-Shafatain):** Baa, Meem, Waw, Faa.\n4. **The Oral Cavity (Al-Jawf):** For long vowels.\n5. **The Nasal Cavity (Al-Khayshum):** For Ghunnah (nasal sound).',
+        level: 'Al-Jazariyyah 1',
+        description: 'The Obligation of Tajwid, History, and Virtues.',
+        sections: [
+            {
+                type: 'scholarly_definition',
+                title: 'Definition of Tajwid',
+                linguistic: 'To improve (At-Tahsin) and to make something better.',
+                technical: 'Articulating every letter from its correct articulation point (Makhraj) giving it its rights (Sifat Lazimah) and dues (Sifat Aridah).'
+            },
+            {
+                type: 'evidence',
+                title: 'The Evidence',
+                arabic: 'وَالأَخْـذُ بِالتَّـجْوِيـدِ حَـتْـمٌ لازِمُ ... مَــنْ لَــمْ يُـجَـوِّدِ الْـقُـرَآنَ آثِــمُ',
+                translation: 'And applying Tajweed is an issue of absolute necessity, Whoever does not apply Tajweed to the Quran is a sinner.'
+            },
+            {
+                type: 'highlight',
+                title: 'Why is it Fard (Obligatory)?',
+                content: 'Scholars agree that reading with Tajwid is Fard Ayn (Individual Obligation) upon every Muslim to the extent that preserves the validity of prayer. Advanced theory is Fard Kifayah.'
+            }
+        ]
     },
     {
-        id: 'vowels-1',
-        title: 'Harakat & Madd',
+        id: 'L1-02',
+        title: 'Makharij: The Throat (Al-Halq)',
         category: 'Foundations',
-        description: 'Short and long vowels in Arabic.',
-        content: '# Harakat and Madd\n\n### Short Vowels (Harakat):\n- **Fathah (a):** A slanted line above the letter.\n- **Kasrah (i):** A slanted line below the letter.\n- **Dhammah (u):** A small "waw" above the letter.\n\n### Long Vowels (Madd letters):\nThese letters prolong the vowel sound for 2 counts:\n1. **Alif (ا):** Follows a Fathah.\n2. **Ya (ي):** Follows a Kasrah.\n3. **Waw (و):** Follows a Dhammah.',
+        level: 'Al-Jazariyyah 1',
+        description: 'The 3 distinct parts of the Throat and their letters.',
+        sections: [
+            {
+                type: 'diagram',
+                diagramType: 'throat'
+            },
+            {
+                type: 'scholarly_definition',
+                title: 'Al-Halq',
+                linguistic: 'The throat.',
+                technical: 'The empty space between the vocal cords and the root of the tongue.'
+            },
+            {
+                type: 'text',
+                title: '1. Aqsal-Halq (Deepest)',
+                content: 'The furthest part of the throat from the mouth. It houses the vocal cords.'
+            },
+            {
+                type: 'example',
+                title: 'Hamzah & Haa',
+                arabic: 'أَءْ   أَهْ',
+                transliteration: 'A\' , Ah',
+                description: 'Hamzah is sharp. Haa is breathy and deep.'
+            },
+            {
+                type: 'evidence',
+                title: 'Jazariyyah Line 10',
+                arabic: 'ثُمَّ لأَقْصَى الْحَلْقِ هَمْزٌ هَاءُ ... ثُمَّ لِـوَسْـطِـهِ فَـعَـيْـنٌ حَــاءُ',
+                translation: 'Then to the deepest part of the throat is Hamzah and Ha; Then to its middle is Ain and Ha.'
+            }
+        ]
     },
     {
-        id: 'noon-1',
-        title: 'Noon Sakinah Rules',
+        id: 'L1-03',
+        title: 'Makharij: The Tongue (Al-Lisan)',
+        category: 'Foundations',
+        level: 'Al-Jazariyyah 1',
+        description: 'The diverse sounds of the Tongue: Deep, Middle, Tip.',
+        sections: [
+            {
+                type: 'diagram',
+                diagramType: 'tongue'
+            },
+            {
+                type: 'text',
+                title: 'The Deep Tongue',
+                content: 'Produces Qaf and Kaf. Notice the difference in the diagram (Red vs Dark Red).'
+            },
+            {
+                type: 'evidence',
+                title: 'Jazariyyah Line 11',
+                arabic: 'أَدْنَــاهُ غَـيْـنٌ خَـاؤُهَـا وَالْـقَـافُ ... أَقْصَى اللِّسَانِ فَوْقُ ثُـمَّ الْكَـافُ',
+                translation: '...And the Qaf is from the deepest tongue (above), then the Kaf (below it/closer).'
+            },
+            {
+                type: 'example',
+                title: 'Qaf (Heavy)',
+                arabic: 'أَقْ',
+                transliteration: 'Aq',
+                description: 'Hits the soft palate (A-Lahah). Heavy and explosive (Qalqalah).'
+            },
+            {
+                type: 'example',
+                title: 'Kaf (Light)',
+                arabic: 'أَكْ',
+                transliteration: 'Ak',
+                description: 'Hits the hard/soft palate junction. Produces Hams (breath) when stopped.'
+            }
+        ]
+    },
+    {
+        id: 'L1-04',
+        title: 'Makharij: The Lips (Shafatain)',
+        category: 'Foundations',
+        level: 'Al-Jazariyyah 1',
+        description: 'The four letters of the lips: Fa, Waw, Ba, Mim.',
+        sections: [
+            {
+                type: 'diagram',
+                diagramType: 'lips'
+            },
+            {
+                type: 'evidence',
+                title: 'Jazariyyah Line 16',
+                arabic: 'وَلِلشَّفَتَيْنِ الْوَاوُ بَـاءٌ مِـيْـمُ ... وَغُنَّةٌ مَخْرَجُهَا الْخَيْشُومُ',
+                translation: 'And for the lips are Waw, Ba, and Mim... And the Ghunnah comes from the Nose.'
+            },
+            {
+                type: 'text',
+                title: 'Baa vs Mim',
+                content: 'Baa (ب) uses the WET part of the lips (inside). Mim (م) uses the DRY part (outside).'
+            }
+        ]
+    },
+
+    // ============================================================
+    // LEVEL 2: RULES (AL-JARARIYYAH - SIFAT)
+    // ============================================================
+    {
+        id: 'L2-01',
+        title: 'Sifat: Hams vs Jahr',
         category: 'Rules',
-        description: 'Izhar, Idgham, Iqlab, and Ikhfa.',
-        content: '# Rules of Noon Sakinah and Tanween\n\nWhen a Noon Sakinah (silent Noon) or Tanween (double vowel) is followed by certain letters, four rules apply:\n\n1. **Izhar (Clarity):** Pronounce clearly if followed by throat letters (ء, ه, ع, ح, غ, خ).\n2. **Idgham (Merging):** Merge into the following letter (ي, ر, م, ل, و, ن).\n3. **Iqlab (Conversion):** Change to a Meem sound if followed by Baa (ب).\n4. **Ikhfa (Hiding):** Light nasal sound for the remaining 15 letters.',
+        level: 'Al-Jazariyyah 2',
+        description: 'The flow of breath (Whisper) vs the trapping of breath (Loudness).',
+        sections: [
+            {
+                type: 'scholarly_definition',
+                title: 'Hams (Whisper)',
+                linguistic: 'Concealment or faint sound.',
+                technical: 'Running of breath when pronouncing the letter due to weakness of reliance on its Makhraj.'
+            },
+            {
+                type: 'list',
+                title: 'Letters of Hams',
+                content: ['Fahathahu Shakhsun Sakat (فحثه شخص سكت)', 'Fa, Ha, Tha, Ha, Shin, Kha, Sad, Sin, Kaf, Ta']
+            },
+            {
+                type: 'example',
+                title: 'Hams in Kaf',
+                arabic: 'أَكْ',
+                transliteration: 'Ak(h)',
+                description: 'You must hear the release of air.'
+            }
+        ]
     },
     {
-        id: 'meem-1',
-        title: 'Meem Sakinah Rules',
+        id: 'L2-02',
+        title: 'Sifat: Isti\'la vs Istifal',
         category: 'Rules',
-        description: 'Ikhfa Shafawi, Idgham Shafawi, and Izhar Shafawi.',
-        content: '# Rules of Meem Sakinah\n\nWhen a silent Meem is followed by:\n1. **Meem (م):** Idgham (Merging).\n2. **Baa (ب):** Ikhfa Shafawi (Hiding).\n3. **Other letters:** Izhar Shafawi (Clarity).',
+        level: 'Al-Jazariyyah 2',
+        description: 'The root cause of Tafkhim (Heaviness).',
+        sections: [
+            {
+                type: 'scholarly_definition',
+                title: 'Isti\'la (Elevation)',
+                linguistic: 'Rising or Elevation.',
+                technical: 'The elevation of the back of the tongue to the soft palate, causing the sound to be trapped and echo.'
+            },
+            {
+                type: 'evidence',
+                title: 'Jazariyyah Line 23',
+                arabic: 'وَسَبْعُ عُلْوٍ خُصَّ ضَغْطٍ قِظْ حَصَرْ ...',
+                translation: 'And seven are elevated (Musta\'liya), restricted to: Kh, S, D, Gh, T, Q, Z.'
+            }
+        ]
     },
     {
-        id: 'chars-1',
-        title: 'Ghunnah & Qalqalah',
-        category: 'Characteristics',
-        description: 'Nasal sounds and echoing sounds.',
-        content: '# Ghunnah and Qalqalah\n\n### Ghunnah:\nA nasal sound emitted from the nose for 2 counts when Noon or Meem have a Shaddah (ّ).\n\n### Qalqalah (Echoing):\nWhen specific letters (ق, ط, ب, ج, د) have a Sukoon, they are pronounced with a slight "echo" or bounce.',
+        id: 'L2-03',
+        title: 'Rules of Raa (Ahkam Ar-Ra)',
+        category: 'Rules',
+        level: 'Al-Jazariyyah 2',
+        description: 'Detailed analysis of Raa states.',
+        sections: [
+            {
+                type: 'text',
+                title: 'The General Rule',
+                content: 'Raa mirrors the vowel. Fatha/Dhamma = Heavy. Kasra = Light.'
+            },
+            {
+                type: 'highlight',
+                title: 'The Exception (Misr & Qitr)',
+                content: 'In words like "Misr" (Egypt) and "Qitr" (Copper) where Raa has Sukoon and is preceded by a Heavy Letter... Scholars differ. Ibn Jazari allows both, but prefers Heavy for Misr and Light for Qitr.'
+            },
+            {
+                type: 'example',
+                title: 'Misr',
+                arabic: 'مِصْرَ',
+                transliteration: 'Misr',
+                description: 'Can be heavy or light (Heavy preferred).'
+            }
+        ]
     },
+
+    // ============================================================
+    // LEVEL 3: ADVANCED
+    // ============================================================
     {
-        id: 'special-1',
-        title: 'Rules of Raa & Laam',
+        id: 'L3-01',
+        title: 'Madd Lazim (Compulsory Prolongation)',
         category: 'Advanced',
-        description: 'Heavy and light pronunciations.',
-        content: '# Rules of Raa and Laam\n\n### The Letter Raa:\nCan be heavy (Tafkheem) or light (Tarqeeq) depending on the Harakat associated with it.\n\n### The Letter Laam:\nGenerally light, but heavy in the name "Allah" if preceded by a Fathah or Dhammah.',
-    },
-    {
-        id: 'waqf-1',
-        title: 'Rules of Waqf',
-        category: 'Advanced',
-        description: 'How and where to stop during recitation.',
-        content: '# Rules of Waqf (Stopping)\n\nLearning when to stop and how to handle the ending of words is crucial for correct meaning and breath control.\n\n- Change the last vowel to a Sukoon when stopping.\n- Observe the small signs above the words (ج, م, لا, etc.) for guidance on stopping or continuing.',
-    },
+        level: 'Al-Jazariyyah 3',
+        description: 'The longest Madd in the Quran (6 Counts).',
+        sections: [
+            {
+                type: 'evidence',
+                title: 'Jazariyyah Definition',
+                arabic: 'وَلاَزِمٌ إِنْ جَاءَ بَعْدَ حَرْفِ مَدْ ... سَاكِنُ حَالَيْنِ وَبِالطُّولِ يُمَدْ',
+                translation: 'And it is Lazim if after the Madd letter comes a Sukoon that is permanent (in stopping and continuing)... and it is prolonged with Length (6 counts).'
+            },
+            {
+                type: 'example',
+                title: 'Kalimi Muthaqqal',
+                arabic: 'الْحَاقَّةُ',
+                transliteration: 'Al-Haaa-qqah',
+                description: 'Heavy because of the Shaddah.'
+            }
+        ]
+    }
 ];
 
 exports.getLessons = async (req, res) => {
