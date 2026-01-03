@@ -7,7 +7,7 @@ const Card = ({
     children,
     variant = 'default', // default, gradient, outline
     style = {},
-    gradientColors = colors.purpleGradient,
+    gradientColors = colors.primaryGradient || ['#2563EB', '#60A5FA'],
 }) => {
     if (variant === 'gradient') {
         return (

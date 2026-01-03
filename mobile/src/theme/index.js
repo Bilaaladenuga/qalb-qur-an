@@ -2,32 +2,34 @@
 // Inspired by Islamic art with a feminine, premium feel
 
 export const colors = {
-    // Primary - Spiritual Purple
-    primary: '#8B5CF6',
-    primaryLight: '#A78BFA',
-    primaryDark: '#7C3AED',
+    // Primary - Royal Blue (Trust, Calm, Clarity)
+    primary: '#2563EB',
+    primaryLight: '#60A5FA',
+    primaryDark: '#1E40AF',
 
-    // Secondary - Warm Gold
+    // Secondary - Golden Amber (Warmth, Premium accent)
     secondary: '#F59E0B',
-    secondaryLight: '#FBBF24',
-    secondaryDark: '#D97706',
+    secondaryLight: '#FCD34D',
+    secondaryDark: '#B45309',
 
-    // Background - Deep Navy (calm, focused)
-    background: '#0F172A',
-    backgroundLight: '#1E293B',
+    // Background - Clean White & Off-White
+    background: '#FFFFFF',
+    backgroundLight: '#F8FAFC', // Slate 50
 
-    // Surface - Slate (cards, containers)
-    surface: '#1E293B',
-    surfaceLight: '#334155',
+    // Surface - Light Greys (Cards, Containers)
+    surface: '#F1F5F9', // Slate 100
+    surfaceLight: '#FFFFFF',
+    surfaceDark: '#E2E8F0',
 
-    // Accent - Emerald (growth, success)
+    // Accent - Emerald (Success, Growth)
     accent: '#10B981',
     accentLight: '#34D399',
 
-    // Text colors
-    text: '#F8FAFC',
-    textSecondary: '#94A3B8',
-    textMuted: '#64748B',
+    // Text colors - High contrast for readability on white
+    text: '#0F172A', // Slate 900
+    textSecondary: '#64748B', // Slate 500
+    textMuted: '#94A3B8', // Slate 400
+    textInverse: '#FFFFFF', // For text on primary buttons
 
     // Status colors
     success: '#10B981',
@@ -38,11 +40,13 @@ export const colors = {
     // Special - Islamic Gold Gradient
     goldGradient: ['#F59E0B', '#D97706', '#B45309'],
 
-    // Purple Gradient 
-    purpleGradient: ['#8B5CF6', '#7C3AED', '#6D28D9'],
+    // Blue Sky Gradient (Primary)
+    primaryGradient: ['#2563EB', '#3B82F6', '#60A5FA'],
+    // Alias for backward compatibility (prevents crashes)
+    purpleGradient: ['#2563EB', '#3B82F6', '#60A5FA'],
 
-    // Peaceful gradient
-    peacefulGradient: ['#1E293B', '#0F172A'],
+    // Peaceful White/Blue Gradient
+    peacefulGradient: ['#FFFFFF', '#F0F9FF'],
 };
 
 export const spacing = {

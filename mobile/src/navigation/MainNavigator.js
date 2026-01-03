@@ -41,7 +41,7 @@ const TabIcon = ({ focused, iconName, size }) => {
     if (focused) {
         return (
             <LinearGradient
-                colors={colors.purpleGradient}
+                colors={colors.primaryGradient || ['#2563EB', '#60A5FA']}
                 style={styles.activeIconBg}
             >
                 <Ionicons name={iconName} size={size - 2} color={colors.text} />

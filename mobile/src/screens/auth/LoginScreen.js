@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { login, clearError } from '../../store/slices/authSlice';
 import { Button, Input } from '../../components';
-import { colors, spacing, typography } from '../../theme';
+import { colors, spacing, typography, shadows } from '../../theme';
 
 const LoginScreen = ({ navigation }) => {
     const [email, setEmail] = useState('');
@@ -40,7 +40,7 @@ const LoginScreen = ({ navigation }) => {
 
     return (
         <LinearGradient
-            colors={colors.peacefulGradient}
+            colors={colors.peacefulGradient || ['#FFFFFF', '#F0F9FF']}
             style={styles.container}
         >
             <KeyboardAvoidingView
@@ -133,11 +133,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.md,
+        ...shadows.md,
+        shadowColor: colors.primary, // Blue shadow
     },
     title: {
         fontSize: typography.fontSize.xxxl,
         fontWeight: 'bold',
-        color: colors.text,
+        color: colors.primaryDark, // Dark Blue text
         marginBottom: spacing.xs,
     },
     subtitle: {

@@ -7,7 +7,7 @@ import {
     TouchableOpacity
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { colors, spacing, borderRadius, typography, shadows } from '../theme';
 
 const Input = ({
     label,
@@ -89,31 +89,39 @@ const Input = ({
 
 const styles = StyleSheet.create({
     container: {
-        marginBottom: spacing.md,
+        marginBottom: spacing.lg,
     },
     label: {
         color: colors.text,
         fontSize: typography.fontSize.sm,
-        fontWeight: '500',
+        fontWeight: '600',
         marginBottom: spacing.xs,
+        marginLeft: spacing.xs,
     },
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: colors.surface,
-        borderRadius: borderRadius.md,
-        borderWidth: 1,
-        borderColor: colors.surfaceLight,
+        borderRadius: borderRadius.lg,
+        borderWidth: 1.5,
+        borderColor: colors.surfaceDark,
+        height: 56, // Fixed height for consistency
     },
     inputContainerFocused: {
         borderColor: colors.primary,
+        backgroundColor: '#FFFFFF',
+        ...shadows.sm,
+        shadowColor: colors.primary,
+        shadowOpacity: 0.1,
     },
     inputContainerError: {
         borderColor: colors.error,
+        backgroundColor: '#FEF2F2',
     },
     multilineContainer: {
         alignItems: 'flex-start',
         minHeight: 120,
+        height: 'auto',
     },
     iconContainer: {
         paddingLeft: spacing.md,
@@ -138,6 +146,7 @@ const styles = StyleSheet.create({
         color: colors.error,
         fontSize: typography.fontSize.xs,
         marginTop: spacing.xs,
+        marginLeft: spacing.xs,
     },
 });
 

@@ -14,7 +14,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Ionicons } from '@expo/vector-icons';
 import { register, clearError } from '../../store/slices/authSlice';
 import { Button, Input } from '../../components';
-import { colors, spacing, typography } from '../../theme';
+import { colors, spacing, typography, shadows } from '../../theme';
 
 const RegisterScreen = ({ navigation }) => {
     const [username, setUsername] = useState('');
@@ -53,7 +53,7 @@ const RegisterScreen = ({ navigation }) => {
 
     return (
         <LinearGradient
-            colors={colors.peacefulGradient}
+            colors={colors.peacefulGradient || ['#FFFFFF', '#F0F9FF']}
             style={styles.container}
         >
             <KeyboardAvoidingView
@@ -169,6 +169,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: spacing.lg,
+        ...shadows.sm,
     },
     header: {
         marginBottom: spacing.xl,
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
     title: {
         fontSize: typography.fontSize.xxl,
         fontWeight: 'bold',
-        color: colors.text,
+        color: colors.primaryDark,
         marginBottom: spacing.sm,
     },
     subtitle: {

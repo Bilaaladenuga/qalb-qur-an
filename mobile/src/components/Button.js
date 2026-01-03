@@ -7,7 +7,8 @@ import {
     View
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors, spacing, borderRadius, typography } from '../theme';
+import { colors, spacing, borderRadius, typography, shadows } from '../theme';
+import ScaleButton from './ScaleButton';
 
 const Button = ({
     title,
@@ -51,8 +52,10 @@ const Button = ({
             case 'outline':
             case 'ghost':
                 return { color: colors.primary };
+            case 'secondary':
+                return { color: '#000000' };
             default:
-                return { color: colors.text };
+                return { color: colors.textInverse }; // White text on primary
         }
     };
 
@@ -70,20 +73,19 @@ const Button = ({
     // Primary button with gradient
     if (variant === 'primary') {
         return (
-            <TouchableOpacity
+            <ScaleButton
                 onPress={onPress}
                 disabled={isDisabled}
-                activeOpacity={0.8}
                 style={[styles.buttonContainer, style]}
             >
                 <LinearGradient
-                    colors={isDisabled ? [colors.surfaceLight, colors.surface] : colors.purpleGradient}
+                    colors={isDisabled ? [colors.surfaceDark, colors.surfaceDark] : (colors.primaryGradient || ['#2563EB', '#60A5FA'])}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[styles.gradient, getSizeStyle()]}
                 >
                     {loading ? (
-                        <ActivityIndicator color={colors.text} size="small" />
+                        <ActivityIndicator color={colors.textInverse} size="small" />
                     ) : (
                         <View style={styles.contentContainer}>
                             {icon && <View style={styles.iconContainer}>{icon}</View>}
@@ -93,15 +95,14 @@ const Button = ({
                         </View>
                     )}
                 </LinearGradient>
-            </TouchableOpacity>
+            </ScaleButton>
         );
     }
 
     return (
-        <TouchableOpacity
+        <ScaleButton
             onPress={onPress}
             disabled={isDisabled}
-            activeOpacity={0.7}
             style={[
                 styles.button,
                 getSizeStyle(),
@@ -123,7 +124,7 @@ const Button = ({
                     </Text>
                 </View>
             )}
-        </TouchableOpacity>
+        </ScaleButton>
     );
 };
 
@@ -131,6 +132,9 @@ const styles = StyleSheet.create({
     buttonContainer: {
         borderRadius: borderRadius.lg,
         overflow: 'hidden',
+        ...shadows.md,
+        shadowColor: colors.primary,
+        shadowOpacity: 0.3,
     },
     button: {
         borderRadius: borderRadius.lg,
@@ -145,17 +149,21 @@ const styles = StyleSheet.create({
     smallButton: {
         paddingVertical: spacing.sm,
         paddingHorizontal: spacing.md,
+        height: 36,
     },
     mediumButton: {
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
+        height: 48,
     },
     largeButton: {
         paddingVertical: spacing.lg,
         paddingHorizontal: spacing.xl,
+        height: 56,
     },
     secondaryButton: {
         backgroundColor: colors.secondary,
+        ...shadows.sm,
     },
     outlineButton: {
         backgroundColor: 'transparent',
